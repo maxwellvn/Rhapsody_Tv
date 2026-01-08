@@ -8,7 +8,7 @@ export default function OnboardingScreen() {
   const router = useRouter();
 
   const handleSkip = () => {
-    router.replace('/(tabs)');
+    router.push('/(auth)/register');
   };
 
   return (
