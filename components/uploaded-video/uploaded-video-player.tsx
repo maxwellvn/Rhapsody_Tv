@@ -1,16 +1,14 @@
-import { useRouter } from 'expo-router';
 import * as ScreenOrientation from 'expo-screen-orientation';
+import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { Image, ImageSourcePropType, Modal, Pressable, StyleSheet, View } from 'react-native';
-import { Badge } from './badge';
 
-type VideoPlayerProps = {
+type UploadedVideoPlayerProps = {
   thumbnailSource: ImageSourcePropType;
-  isLive?: boolean;
 };
 
-export function VideoPlayer({ thumbnailSource, isLive = false }: VideoPlayerProps) {
+export function UploadedVideoPlayer({ thumbnailSource }: UploadedVideoPlayerProps) {
   const router = useRouter();
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -31,10 +29,6 @@ export function VideoPlayer({ thumbnailSource, isLive = false }: VideoPlayerProp
 
   const handleBack = () => {
     router.back();
-  };
-
-  const handleCast = () => {
-    console.log('Cast pressed');
   };
 
   const handleSettings = () => {
@@ -64,15 +58,8 @@ export function VideoPlayer({ thumbnailSource, isLive = false }: VideoPlayerProp
           />
         </Pressable>
 
-        {/* Right Controls */}
+        {/* Right Controls - Only Settings (No Cast button) */}
         <View style={styles.rightControls}>
-          <Pressable onPress={handleCast} style={styles.controlButton}>
-            <Image
-              source={require('@/assets/Icons/picture.png')}
-              style={styles.icon}
-              resizeMode="contain"
-            />
-          </Pressable>
           <Pressable onPress={handleSettings} style={styles.controlButton}>
             <Image
               source={require('@/assets/Icons/settings.png')}
@@ -85,14 +72,7 @@ export function VideoPlayer({ thumbnailSource, isLive = false }: VideoPlayerProp
 
       {/* Bottom Controls */}
       <View style={fullscreen ? styles.fullscreenBottomControls : styles.bottomControls}>
-        {/* Live Badge */}
-        {isLive && (
-          <View style={styles.liveBadge}>
-            <Badge label="Live" dotColor="#FF0000" />
-          </View>
-        )}
-
-        {/* Fullscreen Toggle */}
+        {/* Fullscreen Toggle - No Live Badge */}
         <Pressable onPress={handleFullscreen} style={styles.pipButton}>
           <Image
             source={
@@ -191,7 +171,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'flex-end',
     padding: 12,
   },
@@ -201,12 +181,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'flex-end',
     padding: 12,
-  },
-  liveBadge: {
-    // Badge component handles its own styling
   },
   pipButton: {
     width: 35,

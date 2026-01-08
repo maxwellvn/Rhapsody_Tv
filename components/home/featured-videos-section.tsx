@@ -1,11 +1,13 @@
 import { FONTS } from '@/styles/global';
+import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { VideoCard } from './video-card';
 
 export function FeaturedVideosSection() {
+  const router = useRouter();
+
   const handleCardPress = (title: string) => {
-    console.log('Featured video pressed:', title);
-    // Navigation logic will go here
+    router.push('/video');
   };
 
   const handleSeeAllPress = () => {

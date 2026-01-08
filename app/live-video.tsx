@@ -96,7 +96,7 @@ export default function LiveVideoScreen() {
             {/* Video Recommendations */}
             <View style={styles.recommendationsContainer}>
               <VideoRecommendationCard
-                thumbnailSource={require('@/assets/images/carusel-2.png')}
+                thumbnailSource={require('@/assets/images/Image-2.png')}
                 title="Night Of A Thousand Crusades HIGHLIGHT 3"
                 channelName="Rhapsody TV"
                 channelAvatar={require('@/assets/images/Avatar.png')}
