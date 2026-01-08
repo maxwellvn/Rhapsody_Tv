@@ -83,7 +83,10 @@ export default function SignInScreen() {
         </Pressable>
 
         {/* Sign In Button */}
-        <Pressable style={[styles.registerButton, { marginTop: 100 }]}>
+        <Pressable 
+          style={[styles.registerButton, { marginTop: 100 }]}
+          onPress={() => router.push('/(tabs)')}
+        >
           <Text style={styles.registerButtonText}>Sign In</Text>
         </Pressable>
 

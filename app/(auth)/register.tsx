@@ -122,7 +122,10 @@ export default function RegisterScreen() {
         </View>
 
         {/* Register Button */}
-        <Pressable style={styles.registerButton}>
+        <Pressable 
+          style={styles.registerButton}
+          onPress={() => router.push('/(tabs)')}
+        >
           <Text style={styles.registerButtonText}>Register</Text>
         </Pressable>
 

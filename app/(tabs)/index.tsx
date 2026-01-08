@@ -1,9 +1,73 @@
-import { View, Text } from 'react-native';
+import { BottomNav } from '@/components/bottom-nav';
+import { ChannelsListSection } from '@/components/home/channels-list-section';
+import { ContinueWatchingSection } from '@/components/home/continue-watching-section';
+import { FeaturedVideosSection } from '@/components/home/featured-videos-section';
+import { LiveNowSection } from '@/components/home/live-now-section';
+import { ProgramHighlightsSection } from '@/components/home/program-highlights-section';
+import { ProgramsSection } from '@/components/home/programs-section';
+import { SearchBar } from '@/components/search-bar';
+import { styles } from '@/styles/home.styles';
+import { StatusBar } from 'expo-status-bar';
+import { Image, Pressable, ScrollView, View } from 'react-native';
 
 export default function HomeScreen() {
+  const handleNotificationPress = () => {
+    console.log('Notification pressed');
+  };
+
+  const handleSearch = (text: string) => {
+    console.log('Search:', text);
+  };
+
+  const handleTabPress = (tab: string) => {
+    console.log('Tab pressed:', tab);
+    // Navigation logic will go here
+  };
+
   return (
-    <View className="flex-1 items-center justify-center">
-      <Text>Home Screen</Text>
+    <View style={styles.container}>
+      <StatusBar style="dark" />
+      
+      {/* Header */}
+      <View style={styles.header}>
+        <Image
+          source={require('@/assets/logo/Logo.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+        <Pressable onPress={handleNotificationPress} style={styles.notificationButton}>
+          <Image
+            source={require('@/assets/Icons/Bell.png')}
+            style={styles.notificationIcon}
+            resizeMode="contain"
+          />
+        </Pressable>
+      </View>
+
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <SearchBar 
+          placeholder="Search channels and programs..."
+          onSearch={handleSearch}
+        />
+      </View>
+
+      {/* Content */}
+      <ScrollView 
+        style={styles.content} 
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        <LiveNowSection />
+        <ContinueWatchingSection />
+        <ChannelsListSection />
+        <ProgramsSection />
+        <FeaturedVideosSection />
+        <ProgramHighlightsSection />
+      </ScrollView>
+
+      {/* Bottom Navigation */}
+      <BottomNav activeTab="Home" onTabPress={handleTabPress} />
     </View>
   );
 }
