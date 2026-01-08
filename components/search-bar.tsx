@@ -1,7 +1,7 @@
 import { FONTS } from '@/styles/global';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { StyleSheet, TextInput, View, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View, type ViewStyle } from 'react-native';
 
 type SearchBarProps = {
   placeholder?: string;
@@ -21,6 +21,11 @@ export function SearchBar({
     onSearch?.(text);
   };
 
+  const handleClear = () => {
+    setSearchText('');
+    onSearch?.('');
+  };
+
   return (
     <View style={[styles.container, style]}>
       <Ionicons name="search" size={20} color="#999" style={styles.icon} />
@@ -31,6 +36,11 @@ export function SearchBar({
         value={searchText}
         onChangeText={handleSearch}
       />
+      {searchText.length > 0 && (
+        <Pressable onPress={handleClear} style={styles.clearButton} hitSlop={8}>
+          <Ionicons name="close-circle" size={20} color="#999" />
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -54,5 +64,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: FONTS.regular,
     color: '#737373',
+  },
+  clearButton: {
+    marginLeft: 8,
+    padding: 4,
   },
 });

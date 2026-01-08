@@ -7,10 +7,13 @@ import { ProgramHighlightsSection } from '@/components/home/program-highlights-s
 import { ProgramsSection } from '@/components/home/programs-section';
 import { SearchBar } from '@/components/search-bar';
 import { styles } from '@/styles/home.styles';
+import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Image, Pressable, ScrollView, View } from 'react-native';
 
 export default function HomeScreen() {
+  const router = useRouter();
+
   const handleNotificationPress = () => {
     console.log('Notification pressed');
   };
@@ -20,8 +23,11 @@ export default function HomeScreen() {
   };
 
   const handleTabPress = (tab: string) => {
-    console.log('Tab pressed:', tab);
-    // Navigation logic will go here
+    if (tab === 'Discover') {
+      router.push('/discover');
+    } else if (tab === 'Home') {
+      // Already on home
+    }
   };
 
   return (
