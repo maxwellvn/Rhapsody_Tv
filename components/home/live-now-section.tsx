@@ -1,10 +1,13 @@
 import { FONTS } from '@/styles/global';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Badge } from '../badge';
+import { useRouter } from 'expo-router';
 
 export function LiveNowSection() {
+  const router = useRouter();
+
   const handleLivePress = () => {
-    console.log('Live video pressed');
+    router.push('/live-video');
   };
 
   return (
