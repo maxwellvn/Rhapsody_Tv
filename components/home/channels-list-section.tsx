@@ -1,11 +1,12 @@
 import { FONTS } from '@/styles/global';
+import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ChannelCard } from './channel-card';
 
 export function ChannelsListSection() {
   const handleChannelPress = (channelName: string) => {
     console.log('Channel pressed:', channelName);
-    // Navigation logic will go here
+    router.push('/channel-profile');
   };
 
   const handleSeeAllPress = () => {
