@@ -21,6 +21,8 @@ export default function DiscoverScreen() {
       router.push('/(tabs)');
     } else if (tab === 'Schedule') {
       router.push('/(tabs)/schedule');
+    } else if (tab === 'Profile') {
+      router.push('/(tabs)/profile');
     } else if (tab === 'Discover') {
       // Already on discover
     }

@@ -17,6 +17,8 @@ export default function ScheduleScreen() {
       router.push('/(tabs)');
     } else if (tab === 'Discover') {
       router.push('/(tabs)/discover');
+    } else if (tab === 'Profile') {
+      router.push('/(tabs)/profile');
     } else if (tab === 'Schedule') {
       // Already on schedule
     }

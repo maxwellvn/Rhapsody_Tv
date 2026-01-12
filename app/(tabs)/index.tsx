@@ -27,6 +27,8 @@ export default function HomeScreen() {
       router.push('/(tabs)/discover');
     } else if (tab === 'Schedule') {
       router.push('/(tabs)/schedule');
+    } else if (tab === 'Profile') {
+      router.push('/(tabs)/profile');
     } else if (tab === 'Home') {
       // Already on home
     }
