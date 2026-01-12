@@ -15,7 +15,7 @@ export default function HomeScreen() {
   const router = useRouter();
 
   const handleNotificationPress = () => {
-    console.log('Notification pressed');
+    router.push('/notifications');
   };
 
   const handleSearch = (text: string) => {
