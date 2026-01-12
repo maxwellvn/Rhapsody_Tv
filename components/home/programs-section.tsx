@@ -1,11 +1,12 @@
 import { FONTS } from '@/styles/global';
+import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { VideoCard } from './video-card';
 
 export function ProgramsSection() {
   const handleCardPress = (title: string) => {
     console.log('Program pressed:', title);
-    // Navigation logic will go here
+    router.push('/program-profile');
   };
 
   const handleSeeAllPress = () => {

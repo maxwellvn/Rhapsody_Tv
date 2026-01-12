@@ -18,7 +18,9 @@ export default function DiscoverScreen() {
 
   const handleTabPress = (tab: string) => {
     if (tab === 'Home') {
-      router.push('/');
+      router.push('/(tabs)');
+    } else if (tab === 'Schedule') {
+      router.push('/(tabs)/schedule');
     } else if (tab === 'Discover') {
       // Already on discover
     }

@@ -1,14 +1,20 @@
 import { useRouter } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { Dimensions, Image, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 
-const { width } = Dimensions.get('window');
+// Keep the native splash screen visible while we load
+SplashScreen.preventAutoHideAsync();
 
-export default function SplashScreen() {
+export default function CustomSplashScreen() {
   const router = useRouter();
 
   useEffect(() => {
+    // Hide native splash screen immediately when this component mounts
+    SplashScreen.hideAsync();
+
+    // Show custom splash for 3 seconds
     const timer = setTimeout(() => {
       router.replace('/onboarding');
     }, 3000);
