@@ -16,8 +16,7 @@ export default function ProfileScreen() {
   };
 
   const handleSettingsPress = () => {
-    console.log('Settings pressed');
-    // Settings navigation will go here
+    router.push('/settings');
   };
 
   const handleEditProfile = () => {

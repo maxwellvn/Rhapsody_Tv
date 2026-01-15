@@ -1,3 +1,4 @@
+import { fs } from '@/utils/responsive';
 import { StyleSheet } from 'react-native';
 import { FONTS } from './global';
 
@@ -10,7 +11,7 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 50,
+    paddingTop: 40,
     paddingBottom: 16,
     gap: 12,
   },
@@ -30,7 +31,7 @@ export const styles = StyleSheet.create({
     tintColor: '#000000',
   },
   title: {
-    fontSize: 28,
+    fontSize: fs(28),
     fontFamily: FONTS.bold,
     color: '#000000',
   },

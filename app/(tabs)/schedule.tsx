@@ -2,6 +2,7 @@ import { BottomNav } from '@/components/bottom-nav';
 import { ScheduleChannelsList } from '@/components/schedule/channels-list';
 import { ScheduleHeader } from '@/components/schedule/schedule-header';
 import { ScheduleProgramCard } from '@/components/schedule/schedule-program-card';
+import { FONTS } from '@/styles/global';
 import { borderRadius, fs, hp, platformValue, spacing, wp } from '@/utils/responsive';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -140,7 +141,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: platformValue(hp(48), hp(44)),
+    paddingTop: platformValue(hp(49), hp(46)),
     paddingBottom: hp(8),
     paddingHorizontal: spacing.xl,
     backgroundColor: '#FFFFFF',
@@ -150,6 +151,7 @@ const styles = StyleSheet.create({
     height: hp(45),
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
+    borderColor: '#E5E5E5',
     borderRadius: borderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
@@ -161,7 +163,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: fs(28),
-    fontFamily: 'Inter_700Bold',
+    fontFamily: FONTS.bold,
     color: '#000000',
     marginLeft: spacing.md,
   },

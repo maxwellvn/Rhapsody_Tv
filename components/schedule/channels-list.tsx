@@ -54,7 +54,7 @@ export function ScheduleChannelsList() {
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: hp(20),
+    marginTop: hp(10),
   },
   header: {
     flexDirection: 'row',
