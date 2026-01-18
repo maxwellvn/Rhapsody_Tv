@@ -14,6 +14,7 @@ import 'react-native-reanimated';
 import '../global.css';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { AppProvider } from '@/context/AppProvider';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -43,20 +44,22 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen 
-          name="index" 
-          options={{ 
-            headerShown: false,
-            contentStyle: { backgroundColor: '#ffffff' }
-          }} 
-        />
-        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <AppProvider>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Stack>
+          <Stack.Screen 
+            name="index" 
+            options={{ 
+              headerShown: false,
+              contentStyle: { backgroundColor: '#ffffff' }
+            }} 
+          />
+          <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        </Stack>
+        <StatusBar style="auto" />
+      </ThemeProvider>
+    </AppProvider>
   );
 }

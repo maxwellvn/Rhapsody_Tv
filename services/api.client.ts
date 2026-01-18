@@ -33,7 +33,6 @@ apiClient.interceptors.request.use(
       console.log('📤 API Request:', {
         method: config.method?.toUpperCase(),
         url: config.url,
-        data: config.data,
       });
     }
     
@@ -56,7 +55,7 @@ apiClient.interceptors.response.use(
       console.log('📥 API Response:', {
         status: response.status,
         url: response.config.url,
-        data: response.data,
+        success: response.data?.success,
       });
     }
     
@@ -70,7 +69,7 @@ apiClient.interceptors.response.use(
       console.error('❌ API Error:', {
         status: error.response?.status,
         url: error.config?.url,
-        message: error.response?.data?.message || error.message,
+        success: false,
       });
     }
     
@@ -88,7 +87,7 @@ apiClient.interceptors.response.use(
             { refreshToken }
           );
           
-          const { accessToken, refreshToken: newRefreshToken } = response.data.data.tokens;
+          const { accessToken, refreshToken: newRefreshToken } = response.data.data;
           
           // Save new tokens
           await storage.saveTokens(accessToken, newRefreshToken);

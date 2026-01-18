@@ -4,8 +4,8 @@
  */
 
 export const API_CONFIG = {
-  // TODO: Replace with your actual API base URL
-  BASE_URL: 'https://api.example.com/api/v1',
+  // Backend API base URL
+  BASE_URL: 'https://rhapsody-tv-backend.fly.dev/v1',
   
   // Timeout duration in milliseconds
   TIMEOUT: 30000,
@@ -21,6 +21,7 @@ export const API_ENDPOINTS = {
     REGISTER: '/auth/register',
     LOGOUT: '/auth/logout',
     REFRESH_TOKEN: '/auth/refresh',
+    REQUEST_EMAIL_VERIFICATION: '/auth/email/request-verification',
     VERIFY_EMAIL: '/auth/verify-email',
     FORGOT_PASSWORD: '/auth/forgot-password',
     RESET_PASSWORD: '/auth/reset-password',

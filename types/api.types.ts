@@ -40,27 +40,25 @@ export interface RegisterRequest {
   fullName: string;
   email: string;
   password: string;
-  confirmPassword: string;
-  dateOfBirth?: string;
+}
+
+export interface VerifyEmailRequest {
+  email: string;
+  code: string;
 }
 
 export interface AuthResponse {
   user: User;
-  tokens: {
-    accessToken: string;
-    refreshToken: string;
-    expiresIn: number;
-  };
+  accessToken: string;
+  refreshToken: string;
+  isEmailVerified: boolean;
 }
 
 export interface User {
   id: string;
-  fullName: string;
   email: string;
-  avatar?: string;
-  isVerified: boolean;
-  createdAt: string;
-  updatedAt: string;
+  fullName: string;
+  roles: string[];
 }
 
 /**

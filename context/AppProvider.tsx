@@ -1,6 +1,7 @@
 import React, { ReactNode } from 'react';
 import { AuthProvider } from './AuthContext';
 import { QueryProvider } from './QueryProvider';
+import { ToastProvider } from './ToastContext';
 
 /**
  * Combined App Providers
@@ -14,7 +15,9 @@ export const AppProvider = ({ children }: AppProviderProps) => {
   return (
     <QueryProvider>
       <AuthProvider>
-        {children}
+        <ToastProvider>
+          {children}
+        </ToastProvider>
       </AuthProvider>
     </QueryProvider>
   );

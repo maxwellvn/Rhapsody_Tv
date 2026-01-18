@@ -1,3 +1,4 @@
+import { hp, wp } from '@/utils/responsive';
 import { useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -43,7 +44,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logo: {
-    width: 261,
-    height: 56,
+    width: wp(261),
+    height: hp(56),
+    maxWidth: 261,
+    maxHeight: 56,
   },
 });

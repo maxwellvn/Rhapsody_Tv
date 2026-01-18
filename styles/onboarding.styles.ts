@@ -1,6 +1,6 @@
-import { Dimensions, StyleSheet } from 'react-native';
-
-const { width } = Dimensions.get('window');
+import { fs, hp, spacing, wp } from '@/utils/responsive';
+import { StyleSheet } from 'react-native';
+import { FONTS } from './global';
 
 export const styles = StyleSheet.create({
   container: {
@@ -9,60 +9,66 @@ export const styles = StyleSheet.create({
   },
   skipButton: {
     position: 'absolute',
-    top: 48,
-    right: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    backgroundColor: '#0000FF',
+    top: hp(48),
+    right: spacing.xl,
+    paddingHorizontal: wp(24),
+    paddingVertical: hp(10),
+    backgroundColor: 'transparent',
     borderColor: '#FAFAFA',
     borderWidth: 1,
     borderRadius: 12,
+    zIndex: 10,
   },
   skipButtonText: {
     color: '#FAFAFA',
-    fontWeight: '500',
-    fontSize: 14,
+    fontFamily: FONTS.medium,
+    fontSize: fs(14),
+  },
+  headlineContainer: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: hp(70),
+    paddingBottom: hp(10),
   },
   headlineText: {
-    position: 'absolute',
-    top: 140,
-    left: 20,
-    right: 20,
     color: '#FFFFFF',
-    fontSize: 48,
-    fontWeight: 'bold',
-    lineHeight: 56,
+    fontSize: fs(44),
+    fontFamily: FONTS.bold,
+    lineHeight: fs(52),
   },
-  carouselContainer: {
-    position: 'absolute',
-    top: 320,
-    left: 0,
-    right: 0,
-    height: 340,
+  headlineAccent: {
+    color: '#FFFFFF',
+    fontSize: fs(44),
+    fontFamily: FONTS.bold,
+  },
+  carouselWrapper: {
+    marginTop: hp(30),
+    marginBottom: hp(130),
   },
   carouselContent: {
-    paddingLeft: 20,
-    paddingRight: 20,
+    alignItems: 'center',
+  },
+  carouselCard: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   carouselImage: {
-    width: width - 80,
-    height: 300,
-    marginHorizontal: 8,
+    width: '100%',
+    height: hp(340),
     borderRadius: 20,
   },
+  buttonContainer: {
+    paddingHorizontal: spacing.xl,
+    paddingBottom: hp(32),
+  },
   getStartedButton: {
-    position: 'absolute',
-    bottom: 40,
-    left: 20,
-    right: 20,
-    paddingVertical: 12,
+    paddingVertical: hp(16),
     backgroundColor: '#FAFAFA',
     borderRadius: 12,
     alignItems: 'center',
   },
   getStartedButtonText: {
     color: '#0000FF',
-    fontWeight: '600',
-    fontSize: 16,
+    fontFamily: FONTS.semibold,
+    fontSize: fs(16),
   },
 });

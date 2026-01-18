@@ -43,10 +43,17 @@ class AuthService {
   }
 
   /**
-   * Verify email
+   * Request email verification code
    */
-  async verifyEmail(token: string): Promise<ApiResponse<void>> {
-    return api.post<void>(API_ENDPOINTS.AUTH.VERIFY_EMAIL, { token });
+  async requestEmailVerification(email: string): Promise<ApiResponse<{ email: string }>> {
+    return api.post<{ email: string }>(API_ENDPOINTS.AUTH.REQUEST_EMAIL_VERIFICATION, { email });
+  }
+
+  /**
+   * Verify email with 6-digit code
+   */
+  async verifyEmail(email: string, code: string): Promise<ApiResponse<{}>> {
+    return api.post<{}>(API_ENDPOINTS.AUTH.VERIFY_EMAIL, { email, code });
   }
 
   /**
