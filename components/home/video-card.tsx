@@ -1,6 +1,7 @@
 import { View, Text, Image, StyleSheet, Pressable, ImageSourcePropType } from 'react-native';
 import { FONTS } from '@/styles/global';
 import { Badge } from '../badge';
+import { wp, hp, fs, spacing, borderRadius, dimensions } from '@/utils/responsive';
 
 type VideoCardProps = {
   imageSource: ImageSourcePropType;
@@ -42,14 +43,14 @@ export function VideoCard({
 
 const styles = StyleSheet.create({
   container: {
-    width: 160,
-    marginRight: 12,
+    width: dimensions.isTablet ? wp(200) : wp(160),
+    marginRight: spacing.md,
   },
   imageContainer: {
     position: 'relative',
     width: '100%',
-    height: 90,
-    borderRadius: 8,
+    height: dimensions.isTablet ? hp(120) : hp(90),
+    borderRadius: borderRadius.sm,
     overflow: 'hidden',
     backgroundColor: '#E5E5E5',
   },
@@ -59,14 +60,14 @@ const styles = StyleSheet.create({
   },
   badgeContainer: {
     position: 'absolute',
-    top: 8,
-    left: 8,
+    top: spacing.sm,
+    left: spacing.sm,
   },
   title: {
-    marginTop: 8,
-    fontSize: 14,
+    marginTop: spacing.sm,
+    fontSize: dimensions.isTablet ? fs(16) : fs(14),
     fontFamily: FONTS.medium,
     color: '#000000',
-    lineHeight: 18,
+    lineHeight: dimensions.isTablet ? fs(22) : fs(18),
   },
 });

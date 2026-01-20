@@ -229,3 +229,87 @@ export interface SearchHistory {
   query: string;
   searchedAt: string;
 }
+
+/**
+ * Homepage Types
+ */
+
+export interface LiveNowProgram {
+  id: string;
+  title: string;
+  description: string;
+  startTime: string;
+  endTime: string;
+  isLive: boolean;
+  channel: {
+    id: string;
+    name: string;
+    slug: string;
+    logoUrl: string;
+    coverImageUrl: string;
+  };
+  videoId: string;
+  liveStreamId: string;
+}
+
+export interface ContinueWatchingItem {
+  video: {
+    id: string;
+    title: string;
+    description: string;
+    playbackUrl: string;
+    thumbnailUrl: string;
+    durationSeconds: number;
+    channel: {
+      id: string;
+      name: string;
+      slug: string;
+      logoUrl: string;
+      coverImageUrl: string;
+    };
+  };
+  progressSeconds: number;
+  durationSeconds: number;
+}
+
+export interface HomepageChannel {
+  id: string;
+  name: string;
+  slug: string;
+  logoUrl: string;
+  coverImageUrl: string;
+}
+
+export interface HomepageProgram {
+  id: string;
+  title: string;
+  description: string;
+  startTime: string;
+  endTime: string;
+  isLive: boolean;
+  channel: {
+    id: string;
+    name: string;
+    slug: string;
+    logoUrl: string;
+    coverImageUrl: string;
+  };
+  videoId: string;
+  livestreamId: string;
+}
+
+export interface HomepageFeaturedVideo {
+  id: string;
+  title: string;
+  description: string;
+  playbackUrl: string;
+  thumbnailUrl: string;
+  durationSeconds: number;
+  channel: {
+    id: string;
+    name: string;
+    slug: string;
+    logoUrl: string;
+    coverImageUrl: string;
+  };
+}

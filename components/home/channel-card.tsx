@@ -1,6 +1,7 @@
 import { FONTS } from '@/styles/global';
 import { Image, ImageSourcePropType, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Badge } from '../badge';
+import { wp, hp, fs, spacing, borderRadius, dimensions } from '@/utils/responsive';
 
 type ChannelCardProps = {
   logoSource: ImageSourcePropType;
@@ -38,26 +39,26 @@ export function ChannelCard({
 
 const styles = StyleSheet.create({
   container: {
-    width: 120,
-    marginRight: 16,
+    width: dimensions.isTablet ? wp(140) : wp(120),
+    marginRight: spacing.lg,
   },
   logoContainer: {
     position: 'relative',
     width: '100%',
-    height: 120,
-    borderRadius: 12,
+    height: dimensions.isTablet ? hp(150) : hp(120),
+    borderRadius: borderRadius.md,
     overflow: 'hidden',
     backgroundColor: '#FFFFFF',
     borderWidth: 0,
     borderColor: '#E5E5E5',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 12,
+    padding: spacing.md,
   },
   badgeContainer: {
     position: 'absolute',
-    top: 8,
-    left: 8,
+    top: spacing.sm,
+    left: spacing.sm,
     zIndex: 1,
   },
   logo: {
@@ -65,8 +66,8 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   channelName: {
-    marginTop: 8,
-    fontSize: 14,
+    marginTop: spacing.sm,
+    fontSize: dimensions.isTablet ? fs(16) : fs(14),
     fontFamily: FONTS.semibold,
     color: '#000000',
     textAlign: 'center',

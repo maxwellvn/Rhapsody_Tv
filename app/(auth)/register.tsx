@@ -1,9 +1,7 @@
 import { AuthTabs } from '@/components/auth-tabs';
 import Loader from '@/components/loader';
 import { useToast } from '@/context/ToastContext';
-import { authService } from '@/services/auth.service';
 import { styles } from '@/styles/register.styles';
-import { storage } from '@/utils/storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -66,54 +64,47 @@ export default function RegisterScreen() {
   };
 
   const handleRegister = async () => {
-    if (!validateForm()) {
-      return;
-    }
+    // Commented out for testing - navigate directly to homepage
+    // if (!validateForm()) {
+    //   return;
+    // }
     
-    setIsLoading(true);
+    // setIsLoading(true);
     
-    try {
-      const userEmail = email.trim().toLowerCase();
+    // try {
+    //   const userEmail = email.trim().toLowerCase();
       
-      // Step 1: Register user
-      const response = await authService.register({
-        fullName: fullName.trim(),
-        email: userEmail,
-        password,
-      });
+    //   // Step 1: Register user
+    //   const response = await authService.register({
+    //     fullName: fullName.trim(),
+    //     email: userEmail,
+    //     password,
+    //   });
       
-      if (response.success) {
-        // Save tokens to storage
-        await storage.saveTokens(
-          response.data.accessToken,
-          response.data.refreshToken
-        );
+    //   if (response.success) {
+    //     // Save tokens to storage
+    //     await storage.saveTokens(
+    //       response.data.accessToken,
+    //       response.data.refreshToken
+    //     );
         
-        // Save user data
-        await storage.saveUserData(response.data.user);
+    //     // Save user data
+    //     await storage.saveUserData(response.data.user);
         
-        // Step 2: Automatically request email verification code
-        try {
-          await authService.requestEmailVerification(userEmail);
-        } catch (verificationError) {
-          console.error('Error requesting verification code:', verificationError);
-          // Don't block navigation if verification request fails
-        }
+    //     // Navigate directly to home page (bypassing email verification for testing)
+    //     router.replace('/(tabs)');
         
-        // Navigate to verify email screen with user's email
-        router.push({
-          pathname: '/(auth)/verify-email',
-          params: { email: userEmail }
-        });
-        
-        showSuccess(response.message || 'Registration successful! Please check your email for the verification code.');
-      }
-    } catch (error: any) {
-      console.error('Registration error:', error);
-      showError(error.message || 'An error occurred during registration. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
+    //     showSuccess(response.message || 'Registration successful!');
+    //   }
+    // } catch (error: any) {
+    //   console.error('Registration error:', error);
+    //   showError(error.message || 'An error occurred during registration. Please try again.');
+    // } finally {
+    //   setIsLoading(false);
+    // }
+
+    // Navigate directly to homepage regardless of any validation or API calls
+    router.replace('/(tabs)');
   };
 
   return (

@@ -122,7 +122,7 @@ const Dashboard = () => {
               </div>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#0000FF] to-[#0000CC] text-white rounded-lg hover:from-[#0000CC] hover:to-[#000099] transition-all duration-300 font-medium text-sm shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                className="flex items-center gap-2 px-4 py-2 bg-linear-to-r from-[#0000FF] to-[#0000CC] text-white rounded-lg hover:from-[#0000CC] hover:to-[#000099] transition-all duration-300 font-medium text-sm shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                 style={{
                   boxShadow: '0 4px 15px rgba(0, 0, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
                 }}
@@ -153,7 +153,7 @@ const Dashboard = () => {
               </div>
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#0000FF] to-[#0000CC] text-white rounded-lg hover:from-[#0000CC] hover:to-[#000099] transition-all duration-300 font-medium text-sm shadow-lg hover:shadow-xl"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-linear-to-r from-[#0000FF] to-[#0000CC] text-white rounded-lg hover:from-[#0000CC] hover:to-[#000099] transition-all duration-300 font-medium text-sm shadow-lg hover:shadow-xl"
                 style={{
                   boxShadow: '0 4px 15px rgba(0, 0, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
                 }}

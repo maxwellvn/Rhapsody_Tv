@@ -103,4 +103,14 @@ export const API_ENDPOINTS = {
     GET: '/settings',
     UPDATE: '/settings/update',
   },
+  
+  // Homepage
+  HOMEPAGE: {
+    LIVE_NOW: '/homepage/live-now',
+    CONTINUE_WATCHING: '/homepage/continue-watching',
+    CHANNELS: '/homepage/channels',
+    PROGRAMS: '/homepage/programs',
+    FEATURED_VIDEOS: '/homepage/featured-videos',
+    PROGRAM_HIGHLIGHTS: '/homepage/program-highlights',
+  },
 } as const;
