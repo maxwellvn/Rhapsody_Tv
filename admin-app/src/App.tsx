@@ -10,10 +10,15 @@ import { lazy, Suspense } from 'react';
 import Loader from './components/common/Loader';
 
 const UserList = lazy(() => import('./pages/users/UserList'));
+const UserDetail = lazy(() => import('./pages/users/UserDetail'));
 const ChannelList = lazy(() => import('./pages/channels/ChannelList'));
+const ChannelDetail = lazy(() => import('./pages/channels/ChannelDetail'));
 const VideoList = lazy(() => import('./pages/videos/VideoList'));
+const VideoDetail = lazy(() => import('./pages/videos/VideoDetail'));
 const ProgramList = lazy(() => import('./pages/programs/ProgramList'));
+const ProgramDetail = lazy(() => import('./pages/programs/ProgramDetail'));
 const LivestreamList = lazy(() => import('./pages/livestreams/LivestreamList'));
+const LivestreamDetail = lazy(() => import('./pages/livestreams/LivestreamDetail'));
 
 function App() {
   return (
@@ -40,11 +45,31 @@ function App() {
             }
           />
           <Route
+            path="/users/:id"
+            element={
+              <ProtectedRoute>
+                <Suspense fallback={<Loader />}>
+                  <UserDetail />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/channels"
             element={
               <ProtectedRoute>
                 <Suspense fallback={<Loader />}>
                   <ChannelList />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/channels/:id"
+            element={
+              <ProtectedRoute>
+                <Suspense fallback={<Loader />}>
+                  <ChannelDetail />
                 </Suspense>
               </ProtectedRoute>
             }
@@ -60,6 +85,16 @@ function App() {
             }
           />
           <Route
+            path="/videos/:id"
+            element={
+              <ProtectedRoute>
+                <Suspense fallback={<Loader />}>
+                  <VideoDetail />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/programs"
             element={
               <ProtectedRoute>
@@ -70,11 +105,31 @@ function App() {
             }
           />
           <Route
+            path="/programs/:id"
+            element={
+              <ProtectedRoute>
+                <Suspense fallback={<Loader />}>
+                  <ProgramDetail />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/livestreams"
             element={
               <ProtectedRoute>
                 <Suspense fallback={<Loader />}>
                   <LivestreamList />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/livestreams/:id"
+            element={
+              <ProtectedRoute>
+                <Suspense fallback={<Loader />}>
+                  <LivestreamDetail />
                 </Suspense>
               </ProtectedRoute>
             }

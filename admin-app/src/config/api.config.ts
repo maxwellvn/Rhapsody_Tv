@@ -21,13 +21,15 @@ export const API_ENDPOINTS = {
     REFRESH_TOKEN: '/admin/auth/refresh',
   },
   
-  // Admin Users
-  ADMIN_USERS: {
-    LIST: '/admin/users',
-    DETAILS: (id: string) => `/admin/users/${id}`,
-    CREATE: '/admin/users',
-    UPDATE: (id: string) => `/admin/users/${id}`,
-    DELETE: (id: string) => `/admin/users/${id}`,
+  // Users (Admin only per docs, but not under /admin)
+  USERS: {
+    LIST: '/users',
+    ME: '/users/me',
+    DETAILS: (id: string) => `/users/${id}`,
+    CREATE: '/users',
+    UPDATE: (id: string) => `/users/${id}`,
+    DELETE: (id: string) => `/users/${id}`,
+    UPDATE_ME: '/users/me',
   },
   
   // Admin Channels
@@ -64,5 +66,13 @@ export const API_ENDPOINTS = {
     CREATE: '/admin/livestreams',
     UPDATE: (id: string) => `/admin/livestreams/${id}`,
     DELETE: (id: string) => `/admin/livestreams/${id}`,
+    UPDATE_STATUS: (id: string) => `/admin/livestreams/${id}/status`,
+  },
+  
+  // Admin Upload
+  ADMIN_UPLOAD: {
+    IMAGE: '/admin/upload/image',
+    VIDEO: '/admin/upload/video',
+    FROM_URL: '/admin/upload/from-url',
   },
 } as const;

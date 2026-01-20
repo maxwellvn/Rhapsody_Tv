@@ -20,8 +20,13 @@ export const ROUTES = {
   LOGIN: '/login',
   DASHBOARD: '/dashboard',
   USERS: '/users',
+  USER_DETAIL: (id: string) => `/users/${id}`,
   CHANNELS: '/channels',
+  CHANNEL_DETAIL: (id: string) => `/channels/${id}`,
   VIDEOS: '/videos',
+  VIDEO_DETAIL: (id: string) => `/videos/${id}`,
   PROGRAMS: '/programs',
+  PROGRAM_DETAIL: (id: string) => `/programs/${id}`,
   LIVESTREAMS: '/livestreams',
+  LIVESTREAM_DETAIL: (id: string) => `/livestreams/${id}`,
 } as const;
