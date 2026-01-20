@@ -21,8 +21,8 @@ export default function LiveVideoScreen() {
   const fetchVideoStream = async () => {
     // For testing/demo purposes, use a test video if no id is provided
     if (!id) {
-      // Using a sample test video URL for demo purposes
-      setVideoUri('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4');
+      // Using HLS stream URL for demo purposes
+      setVideoUri('https://2nbyjxnbl53k-hls-live.5centscdn.com/RTV/59a49be6dc0f146c57cd9ee54da323b1.sdp/playlist.m3u8');
       setIsLoadingVideo(false);
       return;
     }
@@ -36,13 +36,13 @@ export default function LiveVideoScreen() {
       if (response.success && response.data?.streamUrl) {
         setVideoUri(response.data.streamUrl);
       } else {
-        // Fallback to test video for demo purposes
-        setVideoUri('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4');
+        // Fallback to HLS stream for demo purposes
+        setVideoUri('https://2nbyjxnbl53k-hls-live.5centscdn.com/RTV/59a49be6dc0f146c57cd9ee54da323b1.sdp/playlist.m3u8');
       }
     } catch (err: any) {
       console.error('Error fetching video stream:', err);
-      // Fallback to test video for demo purposes
-      setVideoUri('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4');
+      // Fallback to HLS stream for demo purposes
+      setVideoUri('https://2nbyjxnbl53k-hls-live.5centscdn.com/RTV/59a49be6dc0f146c57cd9ee54da323b1.sdp/playlist.m3u8');
     } finally {
       setIsLoadingVideo(false);
     }
