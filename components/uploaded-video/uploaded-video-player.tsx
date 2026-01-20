@@ -1,109 +1,82 @@
+import { dimensions, hp, spacing } from '@/utils/responsive';
+import { useEvent } from 'expo';
 import * as ScreenOrientation from 'expo-screen-orientation';
-import { useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
-import { Image, ImageSourcePropType, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { useVideoPlayer, VideoView } from 'expo-video';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Image, ImageSourcePropType, StyleSheet, View } from 'react-native';
 
 type UploadedVideoPlayerProps = {
+  videoUri?: string;
   thumbnailSource: ImageSourcePropType;
 };
 
-export function UploadedVideoPlayer({ thumbnailSource }: UploadedVideoPlayerProps) {
-  const router = useRouter();
-  const [isFullscreen, setIsFullscreen] = useState(false);
+export function UploadedVideoPlayer({ videoUri, thumbnailSource }: UploadedVideoPlayerProps) {
+  const [isLoading, setIsLoading] = useState(true);
+  const videoViewRef = useRef<VideoView>(null);
+  
+  const player = useVideoPlayer(videoUri || null, (player) => {
+    if (videoUri) {
+      player.loop = false;
+      player.play();
+    }
+  });
+
+  // Listen to status changes
+  const { status } = useEvent(player, 'statusChange', { status: player.status });
 
   useEffect(() => {
-    if (isFullscreen) {
-      // Lock to landscape when entering fullscreen
-      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
-    } else {
-      // Unlock or return to portrait when exiting fullscreen
-      ScreenOrientation.unlockAsync();
+    if (status === 'readyToPlay') {
+      setIsLoading(false);
+    } else if (status === 'loading') {
+      setIsLoading(true);
+    } else if (status === 'error') {
+      setIsLoading(false);
     }
+  }, [status]);
 
-    // Cleanup: unlock orientation when component unmounts
-    return () => {
-      ScreenOrientation.unlockAsync();
-    };
-  }, [isFullscreen]);
-
-  const handleBack = () => {
-    router.back();
+  const handleFullscreenEnter = async () => {
+    // Lock to landscape when entering fullscreen
+    await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
   };
 
-  const handleSettings = () => {
-    console.log('Settings pressed');
+  const handleFullscreenExit = async () => {
+    // Unlock orientation when exiting fullscreen
+    await ScreenOrientation.unlockAsync();
   };
-
-  const handleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
-  };
-
-  const renderVideoPlayer = (fullscreen: boolean) => (
-    <View style={fullscreen ? styles.fullscreenContainer : styles.container}>
-      <Image
-        source={thumbnailSource}
-        style={fullscreen ? styles.fullscreenThumbnail : styles.thumbnail}
-        resizeMode={fullscreen ? "cover" : "contain"}
-      />
-      
-      {/* Top Controls */}
-      <View style={fullscreen ? styles.fullscreenTopControls : styles.topControls}>
-        {/* Back Button */}
-        <Pressable onPress={handleBack} style={styles.controlButton}>
-          <Image
-            source={require('@/assets/Icons/dropdown.png')}
-            style={[styles.icon]}
-            resizeMode="contain"
-          />
-        </Pressable>
-
-        {/* Right Controls - Only Settings (No Cast button) */}
-        <View style={styles.rightControls}>
-          <Pressable onPress={handleSettings} style={styles.controlButton}>
-            <Image
-              source={require('@/assets/Icons/settings.png')}
-              style={styles.icon}
-              resizeMode="contain"
-            />
-          </Pressable>
-        </View>
-      </View>
-
-      {/* Bottom Controls */}
-      <View style={fullscreen ? styles.fullscreenBottomControls : styles.bottomControls}>
-        {/* Fullscreen Toggle - No Live Badge */}
-        <Pressable onPress={handleFullscreen} style={styles.pipButton}>
-          <Image
-            source={
-              fullscreen
-                ? require('@/assets/Icons/portrait.png')
-                : require('@/assets/Icons/landscape.png')
-            }
-            style={styles.icon}
-            resizeMode="contain"
-          />
-        </Pressable>
-      </View>
-    </View>
-  );
 
   return (
-    <>
-      {/* Normal Player */}
-      {!isFullscreen && renderVideoPlayer(false)}
+    <View style={styles.container}>
+      {videoUri ? (
+        <>
+          <VideoView
+            ref={videoViewRef}
+            player={player}
+            style={styles.video}
+            contentFit="contain"
+            nativeControls={true}
+            fullscreenOptions={{
+              enable: true,
+              orientation: 'landscape',
+            }}
+            onFullscreenEnter={handleFullscreenEnter}
+            onFullscreenExit={handleFullscreenExit}
+          />
 
-      {/* Fullscreen Modal */}
-      <Modal
-        visible={isFullscreen}
-        animationType="fade"
-        onRequestClose={() => setIsFullscreen(false)}
-        supportedOrientations={['landscape', 'portrait']}
-      >
-        <StatusBar style="light" hidden />
-        {renderVideoPlayer(true)}
-      </Modal>
-    </>
+          {/* Loading Indicator */}
+          {isLoading && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#FFFFFF" />
+            </View>
+          )}
+        </>
+      ) : (
+        <Image
+          source={thumbnailSource}
+          style={styles.thumbnail}
+          resizeMode="contain"
+        />
+      )}
+    </View>
   );
 }
 
@@ -111,91 +84,28 @@ const styles = StyleSheet.create({
   container: {
     position: 'relative',
     width: '100%',
-    height: 215,
+    height: dimensions.isTablet ? hp(330) : hp(225),
     backgroundColor: '#000000',
     marginTop: 0,
   },
-  fullscreenContainer: {
-    flex: 1,
+  video: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#000000',
   },
   thumbnail: {
     width: '100%',
     height: '100%',
-    marginTop: 20,
+    marginTop: dimensions.isTablet ? spacing.lg : spacing.md,
   },
-  fullscreenThumbnail: {
-    width: '100%',
-    height: '100%',
-    marginLeft: 0,
-  },
-  topControls: {
-    position: 'absolute',
-    top: 15,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    paddingTop: 16,
-  },
-  fullscreenTopControls: {
+  loadingContainer: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 12,
-    paddingTop: 12,
-  },
-  controlButton: {
-    width: 35,
-    height: 35,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rightControls: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  bottomControls: {
-    position: 'absolute',
-    bottom: -10,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'flex-end',
-    padding: 12,
-  },
-  fullscreenBottomControls: {
-    position: 'absolute',
     bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'flex-end',
-    padding: 12,
-  },
-  pipButton: {
-    width: 35,
-    height: 35,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    alignItems: 'center',
     justifyContent: 'center',
-  },
-  icon: {
-    width: 20,
-    height: 20,
-    tintColor: '#FFFFFF',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 10,
   },
 });

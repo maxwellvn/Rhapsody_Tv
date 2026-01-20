@@ -1,129 +1,94 @@
-import { useRouter } from 'expo-router';
+import { dimensions, hp, spacing } from '@/utils/responsive';
+import { useEvent } from 'expo';
 import * as ScreenOrientation from 'expo-screen-orientation';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
-import { Image, ImageSourcePropType, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { useVideoPlayer, VideoView } from 'expo-video';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Image, ImageSourcePropType, StyleSheet, View } from 'react-native';
 import { Badge } from './badge';
 
 type VideoPlayerProps = {
-  thumbnailSource: ImageSourcePropType;
+  videoUri?: string;
+  thumbnailSource?: ImageSourcePropType;
   isLive?: boolean;
 };
 
-export function VideoPlayer({ thumbnailSource, isLive = false }: VideoPlayerProps) {
-  const router = useRouter();
-  const [isFullscreen, setIsFullscreen] = useState(false);
+export function VideoPlayer({ videoUri, thumbnailSource, isLive = false }: VideoPlayerProps) {
+  const [isLoading, setIsLoading] = useState(true);
+  const videoViewRef = useRef<VideoView>(null);
+  
+  const player = useVideoPlayer(videoUri || null, (player) => {
+    if (videoUri) {
+      player.loop = isLive;
+      player.play();
+    }
+  });
+
+  // Listen to status changes
+  const { status } = useEvent(player, 'statusChange', { status: player.status });
 
   useEffect(() => {
-    if (isFullscreen) {
-      // Lock to landscape when entering fullscreen
-      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
-    } else {
-      // Unlock or return to portrait when exiting fullscreen
-      ScreenOrientation.unlockAsync();
+    if (status === 'readyToPlay') {
+      setIsLoading(false);
+    } else if (status === 'loading') {
+      setIsLoading(true);
+    } else if (status === 'error') {
+      setIsLoading(false);
     }
+  }, [status]);
 
-    // Cleanup: unlock orientation when component unmounts
-    return () => {
-      ScreenOrientation.unlockAsync();
-    };
-  }, [isFullscreen]);
-
-  const handleBack = () => {
-    router.back();
+  const handleFullscreenEnter = async () => {
+    // Lock to landscape when entering fullscreen
+    await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
   };
 
-  const handleCast = () => {
-    console.log('Cast pressed');
+  const handleFullscreenExit = async () => {
+    // Unlock orientation when exiting fullscreen
+    await ScreenOrientation.unlockAsync();
   };
-
-  const handleSettings = () => {
-    console.log('Settings pressed');
-  };
-
-  const handleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
-  };
-
-  const renderVideoPlayer = (fullscreen: boolean) => (
-    <View style={fullscreen ? styles.fullscreenContainer : styles.container}>
-      <Image
-        source={thumbnailSource}
-        style={fullscreen ? styles.fullscreenThumbnail : styles.thumbnail}
-        resizeMode={fullscreen ? "cover" : "contain"}
-      />
-      
-      {/* Top Controls */}
-      <View style={fullscreen ? styles.fullscreenTopControls : styles.topControls}>
-        {/* Back Button */}
-        <Pressable onPress={handleBack} style={styles.controlButton}>
-          <Image
-            source={require('@/assets/Icons/dropdown.png')}
-            style={[styles.icon]}
-            resizeMode="contain"
-          />
-        </Pressable>
-
-        {/* Right Controls */}
-        <View style={styles.rightControls}>
-          <Pressable onPress={handleCast} style={styles.controlButton}>
-            <Image
-              source={require('@/assets/Icons/picture.png')}
-              style={styles.icon}
-              resizeMode="contain"
-            />
-          </Pressable>
-          <Pressable onPress={handleSettings} style={styles.controlButton}>
-            <Image
-              source={require('@/assets/Icons/settings.png')}
-              style={styles.icon}
-              resizeMode="contain"
-            />
-          </Pressable>
-        </View>
-      </View>
-
-      {/* Bottom Controls */}
-      <View style={fullscreen ? styles.fullscreenBottomControls : styles.bottomControls}>
-        {/* Live Badge */}
-        {isLive && (
-          <View style={styles.liveBadge}>
-            <Badge label="Live" dotColor="#FF0000" />
-          </View>
-        )}
-
-        {/* Fullscreen Toggle */}
-        <Pressable onPress={handleFullscreen} style={styles.pipButton}>
-          <Image
-            source={
-              fullscreen
-                ? require('@/assets/Icons/portrait.png')
-                : require('@/assets/Icons/landscape.png')
-            }
-            style={styles.icon}
-            resizeMode="contain"
-          />
-        </Pressable>
-      </View>
-    </View>
-  );
 
   return (
-    <>
-      {/* Normal Player */}
-      {!isFullscreen && renderVideoPlayer(false)}
+    <View style={styles.container}>
+      {videoUri ? (
+        <>
+          <VideoView
+            ref={videoViewRef}
+            player={player}
+            style={styles.video}
+            contentFit="contain"
+            nativeControls={true}
+            fullscreenOptions={{
+              enable: true,
+              orientation: 'landscape',
+            }}
+            onFullscreenEnter={handleFullscreenEnter}
+            onFullscreenExit={handleFullscreenExit}
+          />
 
-      {/* Fullscreen Modal */}
-      <Modal
-        visible={isFullscreen}
-        animationType="fade"
-        onRequestClose={() => setIsFullscreen(false)}
-        supportedOrientations={['landscape', 'portrait']}
-      >
-        <StatusBar style="light" hidden />
-        {renderVideoPlayer(true)}
-      </Modal>
-    </>
+          {/* Loading Indicator */}
+          {isLoading && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#FFFFFF" />
+            </View>
+          )}
+
+          {/* Custom Overlay Controls */}
+          <View style={styles.overlay}>
+            {/* Live Badge Overlay */}
+            {isLive && (
+              <View style={styles.liveBadgeContainer}>
+                <Badge label="Live" dotColor="#FF0000" />
+              </View>
+            )}
+          </View>
+        </>
+      ) : (
+        <Image
+          source={thumbnailSource || require('@/assets/images/carusel-2.png')}
+          style={styles.thumbnail}
+          resizeMode="contain"
+        />
+      )}
+    </View>
   );
 }
 
@@ -131,94 +96,42 @@ const styles = StyleSheet.create({
   container: {
     position: 'relative',
     width: '100%',
-    height: 215,
+    height: dimensions.isTablet ? hp(330) : hp(225),
     backgroundColor: '#000000',
     marginTop: 0,
   },
-  fullscreenContainer: {
-    flex: 1,
+  video: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#000000',
   },
   thumbnail: {
     width: '100%',
     height: '100%',
-    marginTop: 20,
+    marginTop: dimensions.isTablet ? spacing.lg : spacing.md,
   },
-  fullscreenThumbnail: {
-    width: '100%',
-    height: '100%',
-    marginLeft: 0,
-  },
-  topControls: {
-    position: 'absolute',
-    top: 15,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    paddingTop: 16,
-  },
-  fullscreenTopControls: {
+  loadingContainer: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 12,
-    paddingTop: 12,
-  },
-  controlButton: {
-    width: 35,
-    height: 35,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rightControls: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  bottomControls: {
-    position: 'absolute',
-    bottom: -10,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    padding: 12,
-  },
-  fullscreenBottomControls: {
-    position: 'absolute',
     bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 10,
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
     left: 0,
     right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    padding: 12,
+    bottom: 0,
+    pointerEvents: 'box-none',
   },
-  liveBadge: {
-    // Badge component handles its own styling
-  },
-  pipButton: {
-    width: 35,
-    height: 35,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  icon: {
-    width: 20,
-    height: 20,
-    tintColor: '#FFFFFF',
+  liveBadgeContainer: {
+    position: 'absolute',
+    top: dimensions.isTablet ? spacing.xl : spacing.lg,
+    left: dimensions.isTablet ? spacing.lg : spacing.md,
+    zIndex: 5,
   },
 });

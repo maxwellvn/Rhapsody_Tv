@@ -39,7 +39,10 @@ export function LiveNowSection() {
 
   const handleLivePress = () => {
     if (liveNowData?.videoId) {
-      router.push(`/live-video?id=${liveNowData.videoId}`);
+      router.push(`/live-video?id=${liveNowData.videoId}&liveStreamId=${liveNowData.liveStreamId}`);
+    } else {
+      // Navigate to live video page even for mock data
+      router.push('/live-video');
     }
   };
 
