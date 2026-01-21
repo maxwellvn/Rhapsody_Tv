@@ -42,6 +42,7 @@ export class VodController {
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
   @ApiQuery({ name: 'programId', required: false, type: String, description: 'Filter by program ID' })
+  @ApiQuery({ name: 'channelId', required: false, type: String, description: 'Filter by channel ID' })
   @ApiOkSuccessResponse({
     description: 'Videos retrieved successfully',
     model: VodPaginatedVideosResponseDto,
@@ -50,8 +51,9 @@ export class VodController {
     @Query('page') page?: number,
     @Query('limit') limit?: number,
     @Query('programId') programId?: string,
+    @Query('channelId') channelId?: string,
   ) {
-    const result = await this.vodService.getVideos(page, limit, programId);
+    const result = await this.vodService.getVideos(page, limit, programId, channelId);
     return {
       success: true,
       message: 'Videos retrieved successfully',
@@ -309,9 +311,9 @@ export class VodController {
 
   @Post(':videoId/watchlist')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Add video to watchlist' })
+  @ApiOperation({ summary: 'Toggle video in watchlist (add/remove)' })
   @ApiParam({ name: 'videoId', description: 'Video ID' })
-  @ApiOkSuccessResponse({ description: 'Video added to watchlist' })
+  @ApiOkSuccessResponse({ description: 'Watchlist updated' })
   async addToWatchlist(
     @CurrentUser() user: UserDocument,
     @Param('videoId') videoId: string,
@@ -323,6 +325,7 @@ export class VodController {
     return {
       success: true,
       message: result.message,
+      data: { inWatchlist: result.inWatchlist },
     };
   }
 

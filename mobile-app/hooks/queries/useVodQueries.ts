@@ -72,6 +72,13 @@ export function useVodVideoDetails(videoId: string) {
       return response.data;
     },
     enabled: !!videoId,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 404 (video not found)
+      if (error?.statusCode === 404) {
+        return false;
+      }
+      return failureCount < 3;
+    },
   });
 }
 
@@ -82,8 +89,16 @@ export function useVodLikeStatus(videoId: string) {
   return useQuery({
     queryKey: vodKeys.likeStatus(videoId),
     queryFn: async () => {
-      const response = await vodService.getLikeStatus(videoId);
-      return response.data;
+      try {
+        const response = await vodService.getLikeStatus(videoId);
+        return response.data;
+      } catch (error: any) {
+        // Return default if video not found (404)
+        if (error?.statusCode === 404) {
+          return { liked: false, likeCount: 0 };
+        }
+        throw error;
+      }
     },
     enabled: !!videoId,
   });
@@ -306,15 +321,23 @@ export function useWatchlistStatus(videoId: string) {
   return useQuery({
     queryKey: vodKeys.watchlistStatus(videoId),
     queryFn: async () => {
-      const response = await vodService.getWatchlistStatus(videoId);
-      return response.data;
+      try {
+        const response = await vodService.getWatchlistStatus(videoId);
+        return response.data;
+      } catch (error: any) {
+        // Return default if video not found (404)
+        if (error?.statusCode === 404) {
+          return { inWatchlist: false };
+        }
+        throw error;
+      }
     },
     enabled: !!videoId,
   });
 }
 
 /**
- * Add video to watchlist
+ * Toggle video in watchlist (add if not in, remove if already in)
  */
 export function useAddToWatchlist() {
   const queryClient = useQueryClient();
@@ -322,11 +345,13 @@ export function useAddToWatchlist() {
   return useMutation({
     mutationFn: async (videoId: string) => {
       const response = await vodService.addToWatchlist(videoId);
-      return { videoId, message: response.data.message };
+      // Backend now returns inWatchlist in data
+      const inWatchlist = response.data.inWatchlist ?? true;
+      return { videoId, message: response.data.message, inWatchlist };
     },
-    onSuccess: ({ videoId }) => {
-      // Update watchlist status cache
-      queryClient.setQueryData(vodKeys.watchlistStatus(videoId), { inWatchlist: true });
+    onSuccess: ({ videoId, inWatchlist }) => {
+      // Update watchlist status cache with actual status from backend
+      queryClient.setQueryData(vodKeys.watchlistStatus(videoId), { inWatchlist });
       // Invalidate watchlist to refetch
       queryClient.invalidateQueries({
         queryKey: vodKeys.watchlist(),

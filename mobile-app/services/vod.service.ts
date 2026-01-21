@@ -22,9 +22,13 @@ class VodService {
   /**
    * Get all public videos (paginated)
    */
-  async getVideos(page: number = 1, limit: number = 20): Promise<ApiResponse<VodPaginatedVideos>> {
+  async getVideos(
+    page: number = 1,
+    limit: number = 20,
+    filters?: { programId?: string; channelId?: string }
+  ): Promise<ApiResponse<VodPaginatedVideos>> {
     return api.get<VodPaginatedVideos>(API_ENDPOINTS.VOD.LIST, {
-      params: { page, limit },
+      params: { page, limit, ...filters },
     });
   }
 
@@ -105,10 +109,10 @@ class VodService {
   }
 
   /**
-   * Add video to watchlist
+   * Add video to watchlist (toggles - adds if not in, removes if already in)
    */
-  async addToWatchlist(videoId: string): Promise<ApiResponse<{ message: string }>> {
-    return api.post<{ message: string }>(API_ENDPOINTS.WATCHLIST.ADD(videoId));
+  async addToWatchlist(videoId: string): Promise<ApiResponse<{ message: string; inWatchlist?: boolean }>> {
+    return api.post<{ message: string; inWatchlist?: boolean }>(API_ENDPOINTS.WATCHLIST.ADD(videoId));
   }
 
   /**

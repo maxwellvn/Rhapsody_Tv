@@ -118,6 +118,33 @@ class LivestreamService {
   }>> {
     return api.post(API_ENDPOINTS.LIVESTREAMS.LIKE(livestreamId));
   }
+
+  /**
+   * Track livestream watch (add to history)
+   */
+  async trackWatch(livestreamId: string): Promise<ApiResponse<{ message: string }>> {
+    return api.post(API_ENDPOINTS.LIVESTREAMS.TRACK_WATCH(livestreamId));
+  }
+
+  /**
+   * Get livestream watch history
+   */
+  async getWatchHistory(page: number = 1, limit: number = 20): Promise<ApiResponse<{
+    items: Array<{
+      id: string;
+      livestream: any;
+      watchedSeconds: number;
+      lastWatchedAt: string;
+    }>;
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }>> {
+    return api.get(API_ENDPOINTS.LIVESTREAMS.WATCH_HISTORY, {
+      params: { page, limit },
+    });
+  }
 }
 
 export const livestreamService = new LivestreamService();

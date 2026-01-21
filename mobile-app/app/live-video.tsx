@@ -1,13 +1,13 @@
 import { LiveChat } from '@/components/live-video/live-chat';
 import { LiveChatModal } from '@/components/live-video/live-chat-modal';
-import { VideoPlayer } from '@/components/video-player';
+import { ModernVideoPlayer } from '@/components/modern-video-player';
 import { VideoRecommendationCard } from '@/components/video-recommendation-card';
 import { styles } from '@/styles/live-video.styles';
 import { dimensions, fs } from '@/utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { ActivityIndicator, Image, ImageSourcePropType, Pressable, ScrollView, Share, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { storage } from '@/utils/storage';
@@ -23,12 +23,15 @@ import {
   useSubscribe, 
   useUnsubscribe 
 } from '@/hooks/queries/useChannelQueries';
+import { livestreamService } from '@/services/livestream.service';
+import { useLivestreamViewer } from '@/hooks/useLivestreamViewer';
 
 export default function LiveVideoScreen() {
   const { id, videoId } = useLocalSearchParams<{ id?: string; videoId?: string }>();
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [userName, setUserName] = useState<string>('');
   const [userAvatar, setUserAvatar] = useState<string | undefined>();
+  const hasTrackedWatch = useRef(false);
 
   // Load user info for chat
   useEffect(() => {
@@ -41,6 +44,22 @@ export default function LiveVideoScreen() {
     };
     loadUser();
   }, []);
+
+  // Track watch history when viewing livestream
+  useEffect(() => {
+    const trackWatch = async () => {
+      if (id && !hasTrackedWatch.current) {
+        hasTrackedWatch.current = true;
+        try {
+          await livestreamService.trackWatch(id);
+          console.log('[LiveVideo] Tracked watch for livestream:', id);
+        } catch (error) {
+          console.error('[LiveVideo] Failed to track watch:', error);
+        }
+      }
+    };
+    trackWatch();
+  }, [id]);
 
   // Fetch livestream details
   const { data: livestream, isLoading, error } = useLivestream(id || '');
@@ -57,6 +76,10 @@ export default function LiveVideoScreen() {
   const isSubscribed = subscriptionStatus?.isSubscribed || false;
   const isSubscriptionLoading = subscribeMutation.isPending || unsubscribeMutation.isPending;
 
+  // Connect to WebSocket for real-time viewer tracking
+  // This ensures the user is counted as a viewer even without opening chat
+  const { viewerCount: wsViewerCount } = useLivestreamViewer(id);
+  
   // Fetch livestream stats (polls every 10 seconds for real-time updates)
   const { data: statsData } = useLivestreamStats(id || '');
   
@@ -66,7 +89,8 @@ export default function LiveVideoScreen() {
   
   const isLiked = likeStatus?.liked || false;
   const likeCount = statsData?.likeCount || likeStatus?.likeCount || 0;
-  const viewerCount = statsData?.viewerCount || livestream?.viewerCount || 0;
+  // Prefer WebSocket viewer count (real-time), fallback to API stats
+  const viewerCount = wsViewerCount ?? statsData?.viewerCount ?? livestream?.viewerCount ?? 0;
 
   // Format view count
   const formatViews = (count?: number): string => {
@@ -161,8 +185,8 @@ export default function LiveVideoScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <StatusBar style="light" />
 
-        {/* Video Player - Always Visible */}
-        <VideoPlayer
+        {/* Modern Video Player with PiP - Always Visible */}
+        <ModernVideoPlayer
           videoUri={streamUrl}
           thumbnailSource={
             displayData.channel?.coverImageUrl
@@ -170,6 +194,10 @@ export default function LiveVideoScreen() {
               : require('@/assets/images/carusel-2.png') as ImageSourcePropType
           }
           isLive={true}
+          title={displayData.title}
+          channelName={displayData.channel?.name}
+          videoId={id}
+          allowPiP={true}
         />
 
         {isChatOpen ? (
@@ -177,7 +205,7 @@ export default function LiveVideoScreen() {
           <LiveChatModal
             livestreamId={id || ''}
             onClose={() => setIsChatOpen(false)}
-            viewerCount={formatViews(0)}
+            viewerCount={viewerCount.toString()}
           />
         ) : (
           /* Regular Content */

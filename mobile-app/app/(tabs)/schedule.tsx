@@ -1,5 +1,4 @@
 import { BottomNav } from '@/components/bottom-nav';
-import { ScheduleChannelsList } from '@/components/schedule/channels-list';
 import { ScheduleHeader } from '@/components/schedule/schedule-header';
 import { ScheduleProgramCard } from '@/components/schedule/schedule-program-card';
 import { ScheduleLivestreamsSection } from '@/components/schedule/schedule-livestreams-section';
@@ -16,7 +15,6 @@ export default function ScheduleScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   // Format date for API call
@@ -27,6 +25,7 @@ export default function ScheduleScreen() {
     setRefreshing(true);
     // Invalidate schedule queries to trigger refetch
     await queryClient.invalidateQueries({ queryKey: scheduleKeys.all });
+    await queryClient.invalidateQueries({ queryKey: ['scheduleLivestreams'] });
     setRefreshing(false);
   }, [queryClient]);
 
@@ -46,10 +45,6 @@ export default function ScheduleScreen() {
     setSelectedDate(date);
   };
 
-  const handleChannelSelect = (channelId: string) => {
-    setSelectedChannelId(channelId === selectedChannelId ? null : channelId);
-  };
-
   const handleProgramPress = (programId: string, isLive: boolean, livestreamId?: string) => {
     if (isLive && livestreamId) {
       router.push(`/live-video?id=${livestreamId}`);
@@ -57,11 +52,6 @@ export default function ScheduleScreen() {
       router.push(`/program-profile?id=${programId}`);
     }
   };
-
-  // Filter schedule by selected channel if one is selected
-  const filteredSchedule = selectedChannelId
-    ? scheduleData?.filter((program) => program.channelId === selectedChannelId)
-    : scheduleData;
 
   // Helper to format time from ISO string
   const formatTime = (isoString: string) => {
@@ -108,13 +98,8 @@ export default function ScheduleScreen() {
           />
         }
       >
-        <ScheduleChannelsList 
-          onChannelSelect={handleChannelSelect}
-          selectedChannelId={selectedChannelId}
-        />
-        
-        {/* Live & Upcoming Livestreams Section */}
-        <ScheduleLivestreamsSection channelId={selectedChannelId} />
+        {/* Live Now Carousel Section */}
+        <ScheduleLivestreamsSection />
         
         <ScheduleHeader 
           selectedDate={selectedDate}
@@ -136,14 +121,14 @@ export default function ScheduleScreen() {
         )}
 
         {/* Empty State */}
-        {!isLoading && !error && (!filteredSchedule || filteredSchedule.length === 0) && (
+        {!isLoading && !error && (!scheduleData || scheduleData.length === 0) && (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No programs scheduled for this date</Text>
           </View>
         )}
 
         {/* Program Schedule List */}
-        {!isLoading && !error && filteredSchedule && filteredSchedule.map((program) => (
+        {!isLoading && !error && scheduleData && scheduleData.map((program) => (
           <ScheduleProgramCard
             key={program.id}
             time={formatTime(program.startTime)}

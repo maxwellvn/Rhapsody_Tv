@@ -3,7 +3,7 @@ import { HorizontalVideoCard } from '@/components/program-profile/horizontal-vid
 import { FONTS } from '@/styles/global';
 import { fs, hp } from '@/utils/responsive';
 import { ActivityIndicator, ImageSourcePropType, StyleSheet, Text, View } from 'react-native';
-import { useVodVideos } from '@/hooks/queries/useVodQueries';
+import { useChannelVideos } from '@/hooks/queries/useChannelQueries';
 import { router } from 'expo-router';
 
 interface HomeTabProps {
@@ -12,9 +12,7 @@ interface HomeTabProps {
 }
 
 export function HomeTab({ channelId, channelName }: HomeTabProps) {
-  // Note: Backend doesn't have channel-specific videos endpoint
-  // Using VOD list and will filter by channelId if available
-  const { data: videosData, isLoading, error } = useVodVideos(1, 10);
+  const { data: videosData, isLoading, error } = useChannelVideos(channelId, 1, 10);
 
   const handleVideoPress = (videoId: string) => {
     router.push(`/video?id=${videoId}`);
@@ -71,10 +69,7 @@ export function HomeTab({ channelId, channelName }: HomeTabProps) {
     );
   }
 
-  // Filter videos by channelId if available, otherwise show all
-  const allVideos = videosData.videos;
-  const channelVideos = allVideos.filter(v => v.channelId === channelId);
-  const videos = channelVideos.length > 0 ? channelVideos : allVideos;
+  const videos = videosData.videos;
   const featuredVideo = videos[0];
   const latestVideos = videos.slice(1);
 

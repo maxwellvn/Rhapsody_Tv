@@ -4,9 +4,8 @@
  */
 
 export const API_CONFIG = {
-  // Backend API base URL
-  // Use local IP for React Native/Expo (localhost doesn't work in mobile)
-  BASE_URL: 'http://172.16.200.105:3000/v1',
+  // Backend API base URL - Production server
+  BASE_URL: 'http://iow4kgks8c0ssgs04kwgs04w.102.219.189.97.sslip.io/v1',
   
   // Timeout duration in milliseconds
   TIMEOUT: 30000,
@@ -143,6 +142,8 @@ export const API_ENDPOINTS = {
     STATS: (id: string) => `/livestreams/${id}/stats`,
     LIKE: (id: string) => `/livestreams/${id}/like`,
     LIKE_STATUS: (id: string) => `/livestreams/${id}/like-status`,
+    TRACK_WATCH: (id: string) => `/livestreams/${id}/watch`,
+    WATCH_HISTORY: '/livestreams/history/list',
   },
 
   // VOD (Video on Demand)

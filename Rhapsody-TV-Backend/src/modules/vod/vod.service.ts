@@ -43,12 +43,16 @@ export class VodService {
   /**
    * Get all public videos with pagination
    */
-  async getVideos(page = 1, limit = 20, programId?: string) {
+  async getVideos(page = 1, limit = 20, programId?: string, channelId?: string) {
     const skip = (page - 1) * limit;
     const filter: Record<string, any> = { isActive: true, visibility: 'public' };
     
     if (programId) {
       filter.programId = new Types.ObjectId(programId);
+    }
+    
+    if (channelId) {
+      filter.channelId = new Types.ObjectId(channelId);
     }
 
     const [videos, total] = await Promise.all([
@@ -467,7 +471,7 @@ export class VodService {
   // ============== WATCHLIST METHODS ==============
 
   /**
-   * Add video to watchlist
+   * Add video to watchlist (or toggle - removes if already exists)
    */
   async addToWatchlist(userId: string, videoId: string) {
     if (!Types.ObjectId.isValid(videoId)) {
@@ -485,7 +489,9 @@ export class VodService {
     });
 
     if (existing) {
-      throw new ConflictException('Video already in watchlist');
+      // Toggle behavior: remove if already in watchlist
+      await this.watchlistModel.findByIdAndDelete(existing._id);
+      return { message: 'Video removed from watchlist', inWatchlist: false };
     }
 
     await this.watchlistModel.create({
@@ -493,26 +499,24 @@ export class VodService {
       videoId: new Types.ObjectId(videoId),
     });
 
-    return { message: 'Video added to watchlist' };
+    return { message: 'Video added to watchlist', inWatchlist: true };
   }
 
   /**
    * Remove video from watchlist
+   * Note: This is idempotent - returns success even if video wasn't in watchlist
    */
   async removeFromWatchlist(userId: string, videoId: string) {
     if (!Types.ObjectId.isValid(videoId)) {
       throw new BadRequestException('Invalid video ID');
     }
 
-    const result = await this.watchlistModel.findOneAndDelete({
+    await this.watchlistModel.findOneAndDelete({
       userId: new Types.ObjectId(userId),
       videoId: new Types.ObjectId(videoId),
     });
 
-    if (!result) {
-      throw new NotFoundException('Video not in watchlist');
-    }
-
+    // Always return success - idempotent operation
     return { message: 'Video removed from watchlist' };
   }
 

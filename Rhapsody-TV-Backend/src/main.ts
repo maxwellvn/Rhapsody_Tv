@@ -2,19 +2,51 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { join } from 'path';
+import { static as expressStatic } from 'express';
+import type { Request, Response, NextFunction } from 'express';
+import { existsSync } from 'fs';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('app.port', 3000);
   const nodeEnv = configService.get<string>('app.nodeEnv', 'development');
 
-  // Security
-  app.use(helmet());
+  // Security - configure helmet to work with admin SPA
+  app.use(
+    helmet({
+      contentSecurityPolicy: false, // Disable CSP for admin app compatibility
+      crossOriginEmbedderPolicy: false,
+      crossOriginOpenerPolicy: false,
+      crossOriginResourcePolicy: false,
+    }),
+  );
+
+  // Serve Admin SPA at /admin (before other routes)
+  const adminPath = join(__dirname, '..', 'public', 'admin');
+  if (existsSync(adminPath)) {
+    // Serve static assets
+    app.use('/admin', expressStatic(adminPath));
+    
+    // SPA fallback - serve index.html for all /admin/* routes that don't match a file
+    // Express 5 uses {*path} syntax instead of * for wildcards
+    app.use('/admin/{*path}', (req: Request, res: Response, next: NextFunction) => {
+      const indexPath = join(adminPath, 'index.html');
+      if (existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        next();
+      }
+    });
+    
+    logger.log('Admin SPA configured at /admin');
+  }
 
   // CORS
   app.enableCors({
@@ -27,8 +59,10 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
-  // Global prefix
-  app.setGlobalPrefix('v1');
+  // Global prefix - only exclude health route (admin API stays under v1)
+  app.setGlobalPrefix('v1', {
+    exclude: ['health'],
+  });
 
   // Validation
   app.useGlobalPipes(

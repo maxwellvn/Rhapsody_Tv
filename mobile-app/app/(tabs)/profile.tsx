@@ -2,11 +2,10 @@ import { BottomNav } from '@/components/bottom-nav';
 import { DownloadedVideosItem } from '@/components/profile/downloaded-videos-item';
 import { ProfileInfo } from '@/components/profile/profile-info';
 import { ProfileSection } from '@/components/profile/profile-section';
-import { hp, spacing, wp } from '@/utils/responsive';
+import { hp, platformValue, spacing, wp } from '@/utils/responsive';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, Image, ImageSourcePropType, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { userService } from '@/services/user.service';
 import { storage } from '@/utils/storage';
@@ -130,7 +129,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar style="dark" />
       
       {/* Header */}
@@ -204,7 +203,7 @@ export default function ProfileScreen() {
       </ScrollView>
 
       <BottomNav activeTab="Profile" onTabPress={handleTabPress} />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -218,7 +217,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.xl,
-    paddingVertical: hp(12),
+    paddingTop: platformValue(hp(50), hp(46)),
+    paddingBottom: hp(12),
   },
   headerSpacer: {
     flex: 1,

@@ -160,11 +160,24 @@ export function useLivestreamStats(livestreamId: string) {
   return useQuery({
     queryKey: homepageKeys.livestreamStats(livestreamId),
     queryFn: async () => {
-      const response = await livestreamService.getStats(livestreamId);
-      return response.data;
+      try {
+        const response = await livestreamService.getStats(livestreamId);
+        return response.data;
+      } catch (error: any) {
+        // Return default if livestream not found (404)
+        if (error?.statusCode === 404) {
+          return { viewerCount: 0, likeCount: 0, isLive: false };
+        }
+        throw error;
+      }
     },
     enabled: !!livestreamId,
     refetchInterval: 10000, // Poll every 10 seconds for real-time updates
+    retry: (failureCount, error: any) => {
+      // Don't retry on 404
+      if (error?.statusCode === 404) return false;
+      return failureCount < 3;
+    },
   });
 }
 
@@ -175,8 +188,16 @@ export function useLivestreamLikeStatus(livestreamId: string) {
   return useQuery({
     queryKey: homepageKeys.livestreamLikeStatus(livestreamId),
     queryFn: async () => {
-      const response = await livestreamService.getLikeStatus(livestreamId);
-      return response.data;
+      try {
+        const response = await livestreamService.getLikeStatus(livestreamId);
+        return response.data;
+      } catch (error: any) {
+        // Return default if livestream not found (404)
+        if (error?.statusCode === 404) {
+          return { liked: false, likeCount: 0 };
+        }
+        throw error;
+      }
     },
     enabled: !!livestreamId,
   });

@@ -15,6 +15,8 @@ import '../global.css';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AppProvider } from '@/context/AppProvider';
+import { PiPProvider } from '@/contexts/pip-context';
+import { MiniPlayer } from '@/components/mini-player';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -45,22 +47,26 @@ export default function RootLayout() {
 
   return (
     <AppProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen
-            name="index"
-            options={{
-              headerShown: false,
-              contentStyle: { backgroundColor: '#ffffff' }
-            }}
-          />
-          <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
-        </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider>
+      <PiPProvider>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <Stack>
+            <Stack.Screen
+              name="index"
+              options={{
+                headerShown: false,
+                contentStyle: { backgroundColor: '#ffffff' }
+              }}
+            />
+            <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
+          </Stack>
+          <StatusBar style="auto" />
+          {/* Floating Mini Player for PiP mode */}
+          <MiniPlayer />
+        </ThemeProvider>
+      </PiPProvider>
     </AppProvider>
   );
 }

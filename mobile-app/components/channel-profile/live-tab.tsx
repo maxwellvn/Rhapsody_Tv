@@ -93,9 +93,12 @@ export function LiveTab({ channelId, channelName }: LiveTabProps) {
   const { data, isLoading, error } = useQuery({
     queryKey: ['channelLivestreams', channelId],
     queryFn: async () => {
+      console.log('[LiveTab] Fetching livestreams for channel:', channelId);
       const response = await livestreamService.getByChannel(channelId);
+      console.log('[LiveTab] Response:', JSON.stringify(response, null, 2));
       return response.data;
     },
+    enabled: !!channelId,
   });
 
   const handleLivestreamPress = (livestream: Livestream) => {

@@ -47,8 +47,8 @@ class ProgramService {
         const program = response.data;
         
         // Transform backend response to ProgramDetail
-        // Backend returns channelId as populated object
-        const channel = program.channelId;
+        // Backend returns channelId as populated object, or channel directly
+        const channel = program.channel || program.channelId;
         const programDetail: ProgramDetail = {
           id: program._id || program.id,
           channelId: typeof channel === 'object' ? (channel._id || channel.id) : channel,
@@ -70,8 +70,9 @@ class ProgramService {
             name: channel.name,
             logoUrl: channel.logoUrl,
           } : undefined,
-          subscriberCount: program.bookmarkCount || 0,
-          videoCount: 0,
+          // Use values from backend if available, fallback to bookmarkCount for backwards compatibility
+          subscriberCount: program.subscriberCount ?? program.bookmarkCount ?? 0,
+          videoCount: program.videoCount ?? 0,
         };
         
         return {
@@ -99,8 +100,6 @@ class ProgramService {
 
   /**
    * Get videos for a program
-   * Note: Backend doesn't have a /programs/:id/videos endpoint,
-   * so we use VOD endpoint and filter by program
    */
   async getProgramVideos(
     programId: string,
@@ -108,12 +107,11 @@ class ProgramService {
     limit: number = 10
   ): Promise<ApiResponse<VodPaginatedVideos>> {
     try {
-      // Get VOD videos - in a real implementation,
-      // we would filter by program ID if the backend supports it
       const response = await api.get<VodPaginatedVideos>(API_ENDPOINTS.VOD.LIST, {
         params: {
           page,
           limit,
+          programId,
         },
       });
       

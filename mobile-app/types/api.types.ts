@@ -531,6 +531,7 @@ export interface Livestream {
     name: string;
     slug?: string;
     logoUrl?: string;
+    coverImageUrl?: string;
   };
   program?: {
     id: string;

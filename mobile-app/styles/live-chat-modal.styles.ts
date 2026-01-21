@@ -103,4 +103,48 @@ export const styles = StyleSheet.create({
     padding: 4,
     marginLeft: 8,
   },
+  sendButtonDisabled: {
+    opacity: 0.5,
+  },
+  statusContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+    gap: 12,
+  },
+  statusText: {
+    fontSize: 14,
+    fontFamily: FONTS.regular,
+    color: '#737373',
+    textAlign: 'center',
+  },
+  errorText: {
+    fontSize: 14,
+    fontFamily: FONTS.regular,
+    color: '#FF3B30',
+    textAlign: 'center',
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: '#0000FF',
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  retryButtonText: {
+    fontSize: 14,
+    fontFamily: FONTS.semibold,
+    color: '#FFFFFF',
+  },
+  avatarPlaceholder: {
+    backgroundColor: '#E5E5E5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarInitial: {
+    fontSize: 16,
+    fontFamily: FONTS.semibold,
+    color: '#737373',
+  },
 });

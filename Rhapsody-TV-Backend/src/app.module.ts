@@ -20,6 +20,7 @@ import { JwtAuthGuard, RolesGuard } from './common/guards';
 // Shared
 import { RedisModule } from './shared/services/redis';
 import { ImageKitModule } from './shared/services/imagekit';
+import { VideoProbeModule } from './shared/services/video-probe';
 
 // Modules
 import { UserModule } from './modules/user';
@@ -28,6 +29,9 @@ import { AdminModule } from './modules/admin/admin.module';
 import { HomepageModule } from './modules/homepage';
 import { VodModule } from './modules/vod';
 import { NotificationModule } from './modules/notification/notification.module';
+
+// Controllers
+import { HealthController } from './health.controller';
 
 @Module({
   imports: [
@@ -50,6 +54,7 @@ import { NotificationModule } from './modules/notification/notification.module';
     // Shared Modules
     RedisModule,
     ImageKitModule,
+    VideoProbeModule,
 
     // Feature Modules
     AuthModule,
@@ -59,6 +64,7 @@ import { NotificationModule } from './modules/notification/notification.module';
     VodModule,
     NotificationModule,
   ],
+  controllers: [HealthController],
   providers: [
     // Global Exception Filter
     {

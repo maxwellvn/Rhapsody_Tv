@@ -45,23 +45,32 @@ class ChannelService {
   }
 
   /**
-   * Get channel videos - Note: Backend doesn't have this endpoint
-   * Returns empty result for now
+   * Get channel videos
    */
   async getChannelVideos(channelId: string, page: number = 1, limit: number = 20): Promise<ApiResponse<VodPaginatedVideos>> {
-    // The backend doesn't have a channel videos endpoint
-    // Return empty paginated response
-    return {
-      success: true,
-      message: 'No channel videos endpoint available',
-      data: {
-        videos: [],
-        total: 0,
-        page: page,
-        limit: limit,
-        totalPages: 0,
-      },
-    };
+    try {
+      const response = await api.get<VodPaginatedVideos>(API_ENDPOINTS.VOD.LIST, {
+        params: {
+          page,
+          limit,
+          channelId,
+        },
+      });
+      return response;
+    } catch (error) {
+      console.error('Error fetching channel videos:', error);
+      return {
+        success: true,
+        message: 'No videos available',
+        data: {
+          videos: [],
+          total: 0,
+          page: page,
+          limit: limit,
+          totalPages: 0,
+        },
+      };
+    }
   }
 
   /**

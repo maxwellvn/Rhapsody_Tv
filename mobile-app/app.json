@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Rhapsody_tv",
-    "slug": "Rhapsody_tv",
+    "name": "Rhapsody TV",
+    "slug": "rhapsody-tv",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/Icons/app-icon.png",

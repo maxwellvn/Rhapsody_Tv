@@ -1,6 +1,6 @@
 import { Comments } from '@/components/comments';
 import { CommentsModal } from '@/components/uploaded-video/comments-modal';
-import { UploadedVideoPlayer } from '@/components/uploaded-video/uploaded-video-player';
+import { ModernVideoPlayer } from '@/components/modern-video-player';
 import { VideoRecommendationCard } from '@/components/video-recommendation-card';
 import { styles } from '@/styles/live-video.styles';
 import { dimensions, fs } from '@/utils/responsive';
@@ -26,10 +26,12 @@ import {
   useSubscribe, 
   useUnsubscribe 
 } from '@/hooks/queries/useChannelQueries';
+import { useToast } from '@/context/ToastContext';
 
 export default function VideoScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const { showSuccess, showError } = useToast();
 
   // Fetch video details
   const { data: video, isLoading: isLoadingVideo, error } = useVodVideoDetails(id || '');
@@ -89,11 +91,19 @@ export default function VideoScreen() {
   const handleWatchlistToggle = () => {
     if (!id) return;
     
-    if (watchlistStatus?.inWatchlist) {
-      removeFromWatchlistMutation.mutate(id);
-    } else {
-      addToWatchlistMutation.mutate(id);
-    }
+    // Use the toggle endpoint which handles both add and remove
+    addToWatchlistMutation.mutate(id, {
+      onSuccess: ({ inWatchlist }) => {
+        if (inWatchlist) {
+          showSuccess('Added to watchlist');
+        } else {
+          showSuccess('Removed from watchlist');
+        }
+      },
+      onError: () => {
+        showError('Failed to update watchlist');
+      },
+    });
   };
 
   const isWatchlistLoading = addToWatchlistMutation.isPending || removeFromWatchlistMutation.isPending;
@@ -103,11 +113,25 @@ export default function VideoScreen() {
     if (!channelId || isSubscriptionLoading) return;
     
     if (isSubscribed) {
-      unsubscribeMutation.mutate(channelId);
+      unsubscribeMutation.mutate(channelId, {
+        onSuccess: () => {
+          showSuccess('Unsubscribed from channel');
+        },
+        onError: () => {
+          showError('Failed to unsubscribe');
+        },
+      });
     } else {
-      subscribeMutation.mutate(channelId);
+      subscribeMutation.mutate(channelId, {
+        onSuccess: () => {
+          showSuccess('Subscribed to channel');
+        },
+        onError: () => {
+          showError('Failed to subscribe');
+        },
+      });
     }
-  }, [channelId, isSubscribed, isSubscriptionLoading, subscribeMutation, unsubscribeMutation]);
+  }, [channelId, isSubscribed, isSubscriptionLoading, subscribeMutation, unsubscribeMutation, showSuccess, showError]);
 
   // Handle share
   const handleShare = useCallback(async () => {
@@ -192,16 +216,21 @@ export default function VideoScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <StatusBar style="light" />
 
-        {/* Uploaded Video Player */}
-        <UploadedVideoPlayer
+        {/* Modern Video Player with PiP */}
+        <ModernVideoPlayer
           videoUri={video.playbackUrl}
           thumbnailSource={
             video.thumbnailUrl
               ? { uri: video.thumbnailUrl } as ImageSourcePropType
               : require('@/assets/images/Image-10.png') as ImageSourcePropType
           }
+          title={video.title}
+          channelName={video.channel?.name}
           onProgressUpdate={handleProgressUpdate}
           onVideoEnd={handleVideoEnd}
+          videoId={id}
+          isLive={false}
+          allowPiP={true}
         />
 
         {isCommentsOpen ? (
