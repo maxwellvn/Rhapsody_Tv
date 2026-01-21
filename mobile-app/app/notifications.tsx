@@ -211,7 +211,7 @@ export default function NotificationsScreen() {
           <FlatList
             data={filteredNotifications}
             renderItem={renderNotificationItem}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item, index) => item.id || `notification-${index}`}
             style={styles.scrollView}
             showsVerticalScrollIndicator={false}
             onEndReached={loadMore}
