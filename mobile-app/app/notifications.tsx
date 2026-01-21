@@ -6,11 +6,13 @@ import { useCallback, useMemo, useState } from 'react';
 import { 
   ActivityIndicator, 
   FlatList, 
+  Modal,
   Pressable, 
   RefreshControl, 
   StatusBar, 
   StyleSheet, 
   Text, 
+  TouchableOpacity,
   View 
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,7 +24,8 @@ import {
 } from '@/hooks/queries/useNotificationQueries';
 import { Notification, NotificationType } from '@/types/api.types';
 import { formatDistanceToNow } from 'date-fns';
-import { hp, spacing } from '@/utils/responsive';
+import { hp, spacing, wp, fs } from '@/utils/responsive';
+import { FONTS } from '@/styles/global';
 
 type TabType = 'All' | 'Comments' | 'Reminders';
 
@@ -33,6 +36,8 @@ const REMINDER_TYPES: NotificationType[] = ['program_reminder', 'new_livestream'
 export default function NotificationsScreen() {
   const [activeTab, setActiveTab] = useState<TabType>('All');
   const [refreshing, setRefreshing] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
 
   // Fetch notifications with infinite scroll
   const {
@@ -87,22 +92,43 @@ export default function NotificationsScreen() {
       markAsRead.mutate(notification.id);
     }
 
-    // Navigate based on notification type and available IDs
+    // Navigate based on notification data
     if (notification.videoId) {
       router.push(`/video?id=${notification.videoId}`);
+    } else if (notification.livestreamId) {
+      router.push(`/live-video?id=${notification.livestreamId}`);
     } else if (notification.channelId) {
       router.push(`/channel-profile?id=${notification.channelId}`);
     } else if (notification.programId) {
       router.push(`/program-profile?id=${notification.programId}`);
-    } else if (notification.livestreamId) {
-      // Navigate to live video screen for livestreams
-      router.push(`/live-video?id=${notification.livestreamId}`);
     }
+    // If no navigation data, just mark as read (already done above)
   };
 
   const handleNotificationMenuPress = (notification: Notification) => {
-    // Delete the notification
-    deleteNotification.mutate(notification.id);
+    setSelectedNotification(notification);
+    setMenuVisible(true);
+  };
+
+  const handleMarkAsRead = () => {
+    if (selectedNotification && !selectedNotification.isRead) {
+      markAsRead.mutate(selectedNotification.id);
+    }
+    setMenuVisible(false);
+    setSelectedNotification(null);
+  };
+
+  const handleDeleteNotification = () => {
+    if (selectedNotification) {
+      deleteNotification.mutate(selectedNotification.id);
+    }
+    setMenuVisible(false);
+    setSelectedNotification(null);
+  };
+
+  const closeMenu = () => {
+    setMenuVisible(false);
+    setSelectedNotification(null);
   };
 
   const onRefresh = useCallback(async () => {
@@ -228,6 +254,41 @@ export default function NotificationsScreen() {
             }
           />
         )}
+
+        {/* Notification Menu Modal */}
+        <Modal
+          visible={menuVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={closeMenu}
+        >
+          <Pressable style={localStyles.modalOverlay} onPress={closeMenu}>
+            <View style={localStyles.menuContainer}>
+              {selectedNotification && !selectedNotification.isRead && (
+                <TouchableOpacity 
+                  style={localStyles.menuItem} 
+                  onPress={handleMarkAsRead}
+                >
+                  <Text style={localStyles.menuItemText}>Mark as read</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity 
+                style={[localStyles.menuItem, localStyles.menuItemDestructive]} 
+                onPress={handleDeleteNotification}
+              >
+                <Text style={[localStyles.menuItemText, localStyles.menuItemTextDestructive]}>
+                  Delete notification
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[localStyles.menuItem, localStyles.menuItemCancel]} 
+                onPress={closeMenu}
+              >
+                <Text style={localStyles.menuItemTextCancel}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Modal>
       </SafeAreaView>
     </>
   );
@@ -252,6 +313,47 @@ const localStyles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
+    color: '#737373',
+    textAlign: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  menuContainer: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingBottom: hp(34),
+    paddingTop: hp(8),
+  },
+  menuItem: {
+    paddingVertical: hp(16),
+    paddingHorizontal: spacing.xl,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  menuItemDestructive: {
+    borderBottomWidth: 0,
+  },
+  menuItemCancel: {
+    marginTop: hp(8),
+    backgroundColor: '#F5F5F5',
+    borderBottomWidth: 0,
+  },
+  menuItemText: {
+    fontSize: fs(16),
+    fontFamily: FONTS.medium,
+    color: '#000000',
+    textAlign: 'center',
+  },
+  menuItemTextDestructive: {
+    color: '#EF4444',
+  },
+  menuItemTextCancel: {
+    fontSize: fs(16),
+    fontFamily: FONTS.medium,
     color: '#737373',
     textAlign: 'center',
   },
