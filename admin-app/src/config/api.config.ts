@@ -14,11 +14,11 @@ export const API_CONFIG = {
 } as const;
 
 export const API_ENDPOINTS = {
-  // Admin Authentication
-  ADMIN_AUTH: {
-    LOGIN: '/admin/auth/login',
-    LOGOUT: '/admin/auth/logout',
-    REFRESH_TOKEN: '/admin/auth/refresh',
+  // Authentication (uses same endpoints as mobile - backend doesn't have separate admin auth)
+  AUTH: {
+    LOGIN: '/auth/login',
+    LOGOUT: '/auth/logout',
+    REFRESH_TOKEN: '/auth/refresh',
   },
   
   // Users (Admin only per docs, but not under /admin)

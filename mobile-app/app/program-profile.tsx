@@ -1,15 +1,25 @@
 import { AboutTab } from '@/components/program-profile/about-tab';
 import { HomeTab } from '@/components/program-profile/home-tab';
+import { LiveTab } from '@/components/program-profile/live-tab';
 import { ProgramProfileHeader } from '@/components/program-profile/profile-header';
 import { VideosTab } from '@/components/program-profile/videos-tab';
 import { styles } from '@/styles/program-profile.styles';
-import { router, Stack } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Image, Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
+import { ActivityIndicator, Image, ImageSourcePropType, Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useProgramDetail, useProgramSubscriptionStatus, useProgramSubscribe, useProgramUnsubscribe } from '@/hooks/queries/useProgramQueries';
 
 export default function ProgramProfileScreen() {
-  const [activeTab, setActiveTab] = useState<'Home' | 'Videos' | 'About'>('Home');
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const [activeTab, setActiveTab] = useState<'Home' | 'Live' | 'Videos' | 'About'>('Home');
+
+  const { data: program, isLoading, error } = useProgramDetail(id);
+  const { data: subscriptionStatus } = useProgramSubscriptionStatus(id);
+  const subscribeMutation = useProgramSubscribe();
+  const unsubscribeMutation = useProgramUnsubscribe();
+  
+  const isSubscribed = subscriptionStatus?.isSubscribed || false;
 
   const handleBack = () => {
     router.back();
@@ -22,6 +32,64 @@ export default function ProgramProfileScreen() {
   const handleMenu = () => {
     // Menu logic
   };
+
+  const handleSubscribe = () => {
+    if (!id) return;
+    if (isSubscribed) {
+      unsubscribeMutation.mutate(id);
+    } else {
+      subscribeMutation.mutate(id);
+    }
+  };
+
+  // Format count for display
+  const formatCount = (count: number | undefined): string => {
+    if (!count) return '0';
+    if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
+    if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
+    return count.toString();
+  };
+
+  if (!id) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: '#333', fontSize: 16 }}>No program ID provided</Text>
+        <Pressable onPress={handleBack} style={{ marginTop: 16, padding: 12, backgroundColor: '#2563EB', borderRadius: 8 }}>
+          <Text style={{ color: '#FFFFFF' }}>Go Back</Text>
+        </Pressable>
+      </SafeAreaView>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#2563EB" />
+        <Text style={{ color: '#666', marginTop: 12 }}>Loading program...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (error || !program) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: '#333', fontSize: 16, textAlign: 'center', paddingHorizontal: 20 }}>
+          Unable to load program. The program may not exist or there was a connection error.
+        </Text>
+        <Pressable onPress={handleBack} style={{ marginTop: 16, padding: 12, backgroundColor: '#2563EB', borderRadius: 8 }}>
+          <Text style={{ color: '#FFFFFF' }}>Go Back</Text>
+        </Pressable>
+      </SafeAreaView>
+    );
+  }
+
+  const coverImage: ImageSourcePropType = program.coverImageUrl 
+    ? { uri: program.coverImageUrl } 
+    : require('@/assets/images/Image-11.png');
+  
+  const avatarImage: ImageSourcePropType = program.channel?.logoUrl 
+    ? { uri: program.channel.logoUrl } 
+    : require('@/assets/images/Avatar.png');
 
   return (
     <>
@@ -66,13 +134,15 @@ export default function ProgramProfileScreen() {
       >
         {/* Program Profile Section */}
         <ProgramProfileHeader
-          bannerImage={require('@/assets/images/Image-11.png')}
-          avatarImage={require('@/assets/images/Image-11.png')}
-          channelName="RHAPSODY DAILIES"
-          subscriberCount="1k subscribers"
-          videoCount="500 videos"
-          description="This Morning with Rhapsody of Realities is a daily live program broadcast on Mondays to Saturdays. Its sole purpose is to inspire,..."
-          onSubscribe={() => console.log('Subscribe pressed')}
+          bannerImage={coverImage}
+          avatarImage={avatarImage}
+          channelName={program.title}
+          subscriberCount={`${formatCount(program.subscriberCount)} subscribers`}
+          videoCount={`${formatCount(program.videoCount)} videos`}
+          description={program.description || 'No description available'}
+          isSubscribed={isSubscribed}
+          isLoading={subscribeMutation.isPending || unsubscribeMutation.isPending}
+          onSubscribe={handleSubscribe}
         />
 
         {/* Tabs */}
@@ -83,6 +153,15 @@ export default function ProgramProfileScreen() {
           >
             <Text style={[styles.tabText, activeTab === 'Home' && styles.activeTabText]}>
               Home
+            </Text>
+          </Pressable>
+
+          <Pressable 
+            style={[styles.tab, activeTab === 'Live' && styles.activeTab]}
+            onPress={() => setActiveTab('Live')}
+          >
+            <Text style={[styles.tabText, activeTab === 'Live' && styles.activeTabText]}>
+              Live
             </Text>
           </Pressable>
 
@@ -107,9 +186,10 @@ export default function ProgramProfileScreen() {
 
         {/* Tab Content */}
         <View style={styles.tabContent}>
-          {activeTab === 'Home' && <HomeTab />}
-          {activeTab === 'Videos' && <VideosTab />}
-          {activeTab === 'About' && <AboutTab />}
+          {activeTab === 'Home' && <HomeTab programId={id} programName={program.title} channelName={program.channel?.name} />}
+          {activeTab === 'Live' && <LiveTab programId={id} programName={program.title} />}
+          {activeTab === 'Videos' && <VideosTab programId={id} programName={program.title} />}
+          {activeTab === 'About' && <AboutTab program={program} />}
         </View>
       </ScrollView>
       </SafeAreaView>

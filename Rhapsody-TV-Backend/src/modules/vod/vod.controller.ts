@@ -41,6 +41,7 @@ export class VodController {
   @ApiOperation({ summary: 'Get all public videos (paginated)' })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
+  @ApiQuery({ name: 'programId', required: false, type: String, description: 'Filter by program ID' })
   @ApiOkSuccessResponse({
     description: 'Videos retrieved successfully',
     model: VodPaginatedVideosResponseDto,
@@ -48,14 +49,75 @@ export class VodController {
   async getVideos(
     @Query('page') page?: number,
     @Query('limit') limit?: number,
+    @Query('programId') programId?: string,
   ) {
-    const result = await this.vodService.getVideos(page, limit);
+    const result = await this.vodService.getVideos(page, limit, programId);
     return {
       success: true,
       message: 'Videos retrieved successfully',
       data: result,
     };
   }
+
+  // ============== STATIC ROUTES (must come before :videoId) ==============
+
+  @Get('watchlist')
+  @ApiOperation({ summary: 'Get user watchlist' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiOkSuccessResponse({ description: 'Watchlist retrieved successfully' })
+  async getWatchlist(
+    @CurrentUser() user: UserDocument,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const result = await this.vodService.getWatchlist(
+      user._id.toString(),
+      page,
+      limit,
+    );
+    return {
+      success: true,
+      message: 'Watchlist retrieved successfully',
+      data: result,
+    };
+  }
+
+  @Get('history')
+  @ApiOperation({ summary: 'Get user watch history' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiOkSuccessResponse({ description: 'Watch history retrieved successfully' })
+  async getWatchHistory(
+    @CurrentUser() user: UserDocument,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const result = await this.vodService.getWatchHistory(
+      user._id.toString(),
+      page,
+      limit,
+    );
+    return {
+      success: true,
+      message: 'Watch history retrieved successfully',
+      data: result,
+    };
+  }
+
+  @Delete('history')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Clear all watch history' })
+  @ApiOkSuccessResponse({ description: 'Watch history cleared' })
+  async clearWatchHistory(@CurrentUser() user: UserDocument) {
+    const result = await this.vodService.clearWatchHistory(user._id.toString());
+    return {
+      success: true,
+      message: result.message,
+    };
+  }
+
+  // ============== DYNAMIC :videoId ROUTES ==============
 
   @Get(':videoId')
   @ApiOperation({ summary: 'Get video details and increment view count' })
@@ -240,6 +302,108 @@ export class VodController {
       success: true,
       message: 'Like status retrieved successfully',
       data: result,
+    };
+  }
+
+  // ============== WATCHLIST ENDPOINTS (dynamic) ==============
+
+  @Post(':videoId/watchlist')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Add video to watchlist' })
+  @ApiParam({ name: 'videoId', description: 'Video ID' })
+  @ApiOkSuccessResponse({ description: 'Video added to watchlist' })
+  async addToWatchlist(
+    @CurrentUser() user: UserDocument,
+    @Param('videoId') videoId: string,
+  ) {
+    const result = await this.vodService.addToWatchlist(
+      user._id.toString(),
+      videoId,
+    );
+    return {
+      success: true,
+      message: result.message,
+    };
+  }
+
+  @Delete(':videoId/watchlist')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Remove video from watchlist' })
+  @ApiParam({ name: 'videoId', description: 'Video ID' })
+  @ApiOkSuccessResponse({ description: 'Video removed from watchlist' })
+  async removeFromWatchlist(
+    @CurrentUser() user: UserDocument,
+    @Param('videoId') videoId: string,
+  ) {
+    const result = await this.vodService.removeFromWatchlist(
+      user._id.toString(),
+      videoId,
+    );
+    return {
+      success: true,
+      message: result.message,
+    };
+  }
+
+  @Get(':videoId/watchlist-status')
+  @ApiOperation({ summary: 'Check if video is in watchlist' })
+  @ApiParam({ name: 'videoId', description: 'Video ID' })
+  @ApiOkSuccessResponse({ description: 'Watchlist status retrieved' })
+  async getWatchlistStatus(
+    @CurrentUser() user: UserDocument,
+    @Param('videoId') videoId: string,
+  ) {
+    const result = await this.vodService.isInWatchlist(
+      user._id.toString(),
+      videoId,
+    );
+    return {
+      success: true,
+      message: 'Watchlist status retrieved',
+      data: result,
+    };
+  }
+
+  // ============== WATCH HISTORY ENDPOINTS (dynamic) ==============
+
+  @Post(':videoId/history')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update watch history for a video' })
+  @ApiParam({ name: 'videoId', description: 'Video ID' })
+  @ApiOkSuccessResponse({ description: 'Watch history updated' })
+  async updateWatchHistory(
+    @CurrentUser() user: UserDocument,
+    @Param('videoId') videoId: string,
+    @Body() body: { watchedSeconds: number; totalDurationSeconds: number },
+  ) {
+    const result = await this.vodService.updateWatchHistory(
+      user._id.toString(),
+      videoId,
+      body.watchedSeconds,
+      body.totalDurationSeconds,
+    );
+    return {
+      success: true,
+      message: result.message,
+    };
+  }
+
+  @Delete(':videoId/history')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Remove video from watch history' })
+  @ApiParam({ name: 'videoId', description: 'Video ID' })
+  @ApiOkSuccessResponse({ description: 'Video removed from history' })
+  async removeFromWatchHistory(
+    @CurrentUser() user: UserDocument,
+    @Param('videoId') videoId: string,
+  ) {
+    const result = await this.vodService.removeFromWatchHistory(
+      user._id.toString(),
+      videoId,
+    );
+    return {
+      success: true,
+      message: result.message,
     };
   }
 }

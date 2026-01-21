@@ -1,23 +1,31 @@
-import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, ImageSourcePropType, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 type LiveChatProps = {
   onPress?: () => void;
+  userName?: string;
+  userAvatar?: string;
 };
 
-export function LiveChat({ onPress }: LiveChatProps) {
+export function LiveChat({ onPress, userName, userAvatar }: LiveChatProps) {
+  const displayName = userName || 'Guest';
+  
   return (
     <Pressable onPress={onPress} style={styles.container}>
       <Text style={styles.title}>View Live Chat</Text>
       
       <View style={styles.chatRow}>
         <Image
-          source={require('@/assets/images/Avatar.png')}
+          source={
+            userAvatar 
+              ? { uri: userAvatar } as ImageSourcePropType
+              : require('@/assets/images/Avatar.png') as ImageSourcePropType
+          }
           style={styles.avatar}
-          resizeMode="contain"
+          resizeMode="cover"
         />
         <View style={styles.inputContainer}>
           <TextInput
-            placeholder="Chat as Lennox Koko"
+            placeholder={`Chat as ${displayName}`}
             placeholderTextColor="#AAAAAA"
             style={styles.input}
             editable={false}

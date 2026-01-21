@@ -24,6 +24,7 @@ import {
   ApiCreatedSuccessResponse,
   ApiOkSuccessResponse,
 } from '../../../common/swagger';
+import { ScheduleType } from '../../channel/schemas/program.schema';
 
 @ApiTags('Admin Programs')
 @ApiBearerAuth()
@@ -52,12 +53,22 @@ export class AdminProgramsController {
   @ApiOperation({ summary: 'Get all programs (Admin only)' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ 
+    name: 'scheduleType', 
+    required: false, 
+    enum: ScheduleType,
+    description: 'Filter by schedule type (daily, weekly, once)',
+  })
   @ApiOkSuccessResponse({
     description: 'Programs retrieved successfully',
     model: PaginatedProgramsResponseDto,
   })
-  async findAll(@Query('page') page?: number, @Query('limit') limit?: number) {
-    const result = await this.adminProgramsService.findAll(page, limit);
+  async findAll(
+    @Query('page') page?: number, 
+    @Query('limit') limit?: number,
+    @Query('scheduleType') scheduleType?: ScheduleType,
+  ) {
+    const result = await this.adminProgramsService.findAll(page, limit, scheduleType);
     return {
       success: true,
       message: 'Programs retrieved successfully',

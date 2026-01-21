@@ -20,6 +20,14 @@ export class CreateVideoDto {
   @IsMongoId()
   channelId: string;
 
+  @ApiPropertyOptional({
+    example: '507f1f77bcf86cd799439011',
+    description: 'Program ID - associates video with a program',
+  })
+  @IsOptional()
+  @IsMongoId()
+  programId?: string;
+
   @ApiProperty({ example: 'My Video Title', description: 'Video title' })
   @IsString()
   @MinLength(1)

@@ -7,6 +7,8 @@ import {
   HomepageChannel,
   HomepageProgram,
   HomepageFeaturedVideo,
+  UpdateProgressRequest,
+  Livestream,
 } from '@/types/api.types';
 
 /**
@@ -66,6 +68,20 @@ class HomepageService {
     return api.get<HomepageFeaturedVideo[]>(API_ENDPOINTS.HOMEPAGE.PROGRAM_HIGHLIGHTS, {
       params: { limit },
     });
+  }
+
+  /**
+   * Update video watch progress
+   */
+  async updateProgress(data: UpdateProgressRequest): Promise<ApiResponse<ContinueWatchingItem>> {
+    return api.post<ContinueWatchingItem>(API_ENDPOINTS.HOMEPAGE.UPDATE_PROGRESS, data);
+  }
+
+  /**
+   * Get livestream details for watching
+   */
+  async watchLivestream(livestreamId: string): Promise<ApiResponse<HomepageProgram>> {
+    return api.get<HomepageProgram>(API_ENDPOINTS.HOMEPAGE.WATCH_LIVESTREAM(livestreamId));
   }
 }
 

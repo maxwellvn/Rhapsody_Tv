@@ -49,8 +49,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       // Save tokens
       await storage.saveTokens(
-        authData.tokens.accessToken,
-        authData.tokens.refreshToken
+        authData.accessToken,
+        authData.refreshToken
       );
 
       // Save user data

@@ -2,15 +2,27 @@ import { BottomNav } from '@/components/bottom-nav';
 import { ChannelsTab } from '@/components/discover/channels-tab';
 import { ProgramsTab } from '@/components/discover/programs-tab';
 import { SearchBar } from '@/components/search-bar';
+import { homepageKeys } from '@/hooks/queries/useHomepageQueries';
 import { styles } from '@/styles/discover.styles';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
-import { Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
 export default function DiscoverScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'Channels' | 'Programs'>('Channels');
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    // Invalidate channels and programs queries
+    await queryClient.invalidateQueries({ queryKey: homepageKeys.channels() });
+    await queryClient.invalidateQueries({ queryKey: homepageKeys.programs() });
+    setRefreshing(false);
+  }, [queryClient]);
 
   const handleSearch = (text: string) => {
     console.log('Search:', text);
@@ -77,6 +89,14 @@ export default function DiscoverScreen() {
         style={styles.content} 
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#2563EB"
+            colors={['#2563EB']}
+          />
+        }
       >
         {activeTab === 'Channels' ? <ChannelsTab /> : <ProgramsTab />}
       </ScrollView>

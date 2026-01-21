@@ -14,6 +14,7 @@ export class AdminVideosService {
     const video = new this.videoModel({
       ...dto,
       channelId: dto.channelId,
+      programId: dto.programId,
     });
 
     return video.save();
@@ -22,17 +23,24 @@ export class AdminVideosService {
   async findAll(
     page = 1,
     limit = 10,
+    programId?: string,
   ): Promise<{ videos: VideoDocument[]; total: number; pages: number }> {
     const skip = (page - 1) * limit;
+    const filter: Record<string, any> = {};
+    
+    if (programId) {
+      filter.programId = programId;
+    }
 
     const [videos, total] = await Promise.all([
       this.videoModel
-        .find()
+        .find(filter)
         .skip(skip)
         .limit(limit)
         .populate('channelId', 'name slug')
+        .populate('programId', 'title')
         .sort({ createdAt: -1 }),
-      this.videoModel.countDocuments(),
+      this.videoModel.countDocuments(filter),
     ]);
 
     return {
@@ -42,10 +50,19 @@ export class AdminVideosService {
     };
   }
 
+  async findByProgramId(programId: string): Promise<VideoDocument[]> {
+    return this.videoModel
+      .find({ programId, isActive: true })
+      .populate('channelId', 'name slug')
+      .populate('programId', 'title')
+      .sort({ createdAt: -1 });
+  }
+
   async findById(id: string): Promise<VideoDocument> {
     const video = await this.videoModel
       .findById(id)
-      .populate('channelId', 'name slug');
+      .populate('channelId', 'name slug')
+      .populate('programId', 'title');
 
     if (!video) {
       throw new NotFoundException('Video not found');

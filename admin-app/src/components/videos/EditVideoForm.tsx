@@ -19,9 +19,10 @@ import { UpdateVideoRequest, Video } from '@/types/api.types';
 import { useQueryClient } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 import { channelService } from '@/services/api/channel.service';
+import { programService } from '@/services/api/program.service';
 
 const videoSchema = z.object({
-  channelId: z.string().min(1, 'Channel is required'),
+  programId: z.string().optional(),
   title: z.string().min(1, 'Title is required').min(3, 'Title must be at least 3 characters'),
   description: z.string().optional(),
   playbackUrl: z.string().url('Must be a valid URL'),
@@ -35,6 +36,23 @@ const videoSchema = z.object({
 });
 
 type VideoFormValues = z.infer<typeof videoSchema>;
+
+// Helper to get channel name
+const getChannelName = (video: Video, channels?: { id: string; name: string }[]): string => {
+  if (typeof video.channelId === 'object') {
+    return video.channelId.name;
+  }
+  return channels?.find(c => c.id === video.channelId)?.name || video.channelId;
+};
+
+// Helper to get program ID from video
+const getProgramId = (video: Video): string | undefined => {
+  if (!video.programId) return undefined;
+  if (typeof video.programId === 'object') {
+    return video.programId._id;
+  }
+  return video.programId;
+};
 
 interface EditVideoFormProps {
   video: Video;
@@ -55,10 +73,19 @@ const EditVideoForm = ({ video, onSuccess, onCancel }: EditVideoFormProps) => {
     },
   });
 
+  // Fetch programs for dropdown
+  const { data: programsData } = useQuery({
+    queryKey: ['programs', 1, 100],
+    queryFn: async () => {
+      const response = await programService.getPrograms({ page: 1, limit: 100 });
+      return response.data;
+    },
+  });
+
   const form = useForm<VideoFormValues>({
     resolver: zodResolver(videoSchema),
     defaultValues: {
-      channelId: video.channelId,
+      programId: getProgramId(video) || '',
       title: video.title,
       description: video.description || '',
       playbackUrl: video.playbackUrl,
@@ -73,6 +100,7 @@ const EditVideoForm = ({ video, onSuccess, onCancel }: EditVideoFormProps) => {
     setIsSubmitting(true);
     try {
       const payload: UpdateVideoRequest = {
+        programId: data.programId?.trim() || undefined,
         title: data.title,
         description: data.description?.trim() || undefined,
         playbackUrl: data.playbackUrl,
@@ -127,11 +155,37 @@ const EditVideoForm = ({ video, onSuccess, onCancel }: EditVideoFormProps) => {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600 mb-2">Channel (cannot be changed)</p>
-            <p className="text-base font-medium text-black">
-              {channelsData?.channels.find(c => c.id === video.channelId)?.name || video.channelId}
-            </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-600 mb-2">Channel (cannot be changed)</p>
+              <p className="text-base font-medium text-black">
+                {getChannelName(video, channelsData?.channels)}
+              </p>
+            </div>
+
+            <FormField
+              control={form.control}
+              name="programId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-black">Program</FormLabel>
+                  <FormControl>
+                    <select
+                      {...field}
+                      className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="">No program (channel only)</option>
+                      {programsData?.programs.map((program) => (
+                        <option key={program.id} value={program.id}>
+                          {program.title}
+                        </option>
+                      ))}
+                    </select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
 
           <FormField

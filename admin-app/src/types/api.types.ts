@@ -135,7 +135,8 @@ export interface UsersListResponse {
  */
 export interface Video {
   id: string;
-  channelId: string;
+  channelId: string | { _id: string; name: string; slug: string };
+  programId?: string | { _id: string; title: string };
   title: string;
   description?: string;
   playbackUrl: string;
@@ -151,6 +152,7 @@ export interface Video {
 
 export interface CreateVideoRequest {
   channelId: string;
+  programId?: string;
   title: string;
   description?: string;
   playbackUrl: string;
@@ -160,7 +162,7 @@ export interface CreateVideoRequest {
   isActive?: boolean;
 }
 
-export interface UpdateVideoRequest extends Partial<CreateVideoRequest> {}
+export interface UpdateVideoRequest extends Partial<Omit<CreateVideoRequest, 'channelId'>> {}
 
 export interface VideosListResponse {
   videos: Video[];
@@ -171,15 +173,39 @@ export interface VideosListResponse {
 /**
  * Program Types
  */
+
+// Schedule type determines how the program is scheduled
+export type ScheduleType = 'daily' | 'weekly' | 'once';
+
+// Days of the week for weekly scheduling
+export const DAYS_OF_WEEK = [
+  { value: 0, label: 'Sunday' },
+  { value: 1, label: 'Monday' },
+  { value: 2, label: 'Tuesday' },
+  { value: 3, label: 'Wednesday' },
+  { value: 4, label: 'Thursday' },
+  { value: 5, label: 'Friday' },
+  { value: 6, label: 'Saturday' },
+] as const;
+
 export interface Program {
   id: string;
-  channelId: string;
+  channelId: string | { _id: string; name: string; slug: string; logoUrl?: string };
   title: string;
   description?: string;
-  startTime: string;
-  endTime: string;
+  scheduleType: ScheduleType;
+  // For daily/weekly schedules: time of day (HH:mm format)
+  startTimeOfDay?: string;
+  endTimeOfDay?: string;
+  // For weekly schedules: which days (0=Sunday, 6=Saturday)
+  daysOfWeek?: number[];
+  // For once: specific date/time. For daily/weekly: optional effective date range
+  startTime?: string;
+  endTime?: string;
   durationInMinutes?: number;
+  timezone?: string;
   category?: string;
+  thumbnailUrl?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -189,12 +215,21 @@ export interface CreateProgramRequest {
   channelId: string;
   title: string;
   description?: string;
-  startTime: string;
-  endTime: string;
+  scheduleType: ScheduleType;
+  // For daily/weekly schedules
+  startTimeOfDay?: string;
+  endTimeOfDay?: string;
+  // For weekly schedules
+  daysOfWeek?: number[];
+  // For once: required. For daily/weekly: optional effective date range
+  startTime?: string;
+  endTime?: string;
+  timezone?: string;
   category?: string;
+  thumbnailUrl?: string;
 }
 
-export interface UpdateProgramRequest extends Partial<CreateProgramRequest> {}
+export interface UpdateProgramRequest extends Partial<Omit<CreateProgramRequest, 'channelId'>> {}
 
 export interface ProgramsListResponse {
   programs: Program[];
@@ -205,13 +240,18 @@ export interface ProgramsListResponse {
 /**
  * Livestream Types
  */
+export type LivestreamScheduleType = 'continuous' | 'scheduled';
+
 export interface Livestream {
   id: string;
-  channelId: string;
+  channelId: string | { _id: string; name: string; slug: string };
+  programId?: string | { _id: string; name: string; slug: string };
   title: string;
   description?: string;
+  scheduleType: LivestreamScheduleType;
   status: 'scheduled' | 'live' | 'ended' | 'canceled';
   scheduledStartAt?: string;
+  scheduledEndAt?: string;
   startedAt?: string;
   endedAt?: string;
   thumbnailUrl?: string;
@@ -225,18 +265,26 @@ export interface Livestream {
 
 export interface CreateLivestreamRequest {
   channelId: string;
+  programId?: string;
   title: string;
   description?: string;
+  scheduleType?: LivestreamScheduleType;
   scheduledStartAt?: string;
+  scheduledEndAt?: string;
   thumbnailUrl?: string;
+  playbackUrl?: string;
   isChatEnabled?: boolean;
 }
 
 export interface UpdateLivestreamRequest {
+  programId?: string;
   title?: string;
   description?: string;
+  scheduleType?: LivestreamScheduleType;
   scheduledStartAt?: string;
+  scheduledEndAt?: string;
   thumbnailUrl?: string;
+  playbackUrl?: string;
   isChatEnabled?: boolean;
 }
 

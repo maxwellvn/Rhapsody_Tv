@@ -1,40 +1,13 @@
 import { FONTS } from '@/styles/global';
-import { homepageService } from '@/services/homepage.service';
-import { HomepageChannel } from '@/types/api.types';
+import { useHomepageChannels } from '@/hooks/queries/useHomepageQueries';
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View, ImageSourcePropType } from 'react-native';
 import { ChannelCard } from './channel-card';
-import { useEffect, useState } from 'react';
 import { wp, hp, fs, spacing, borderRadius, dimensions } from '@/utils/responsive';
 import { Skeleton } from '../skeleton';
 
 export function ChannelsListSection() {
-  const [channelsData, setChannelsData] = useState<HomepageChannel[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    fetchChannels();
-  }, []);
-
-  const fetchChannels = async () => {
-    try {
-      setIsLoading(true);
-      const response = await homepageService.getChannels(10);
-      
-      if (response.success && response.data && response.data.length > 0) {
-        setChannelsData(response.data);
-      } else {
-        // No data available - will show mock data
-        setChannelsData([]);
-      }
-    } catch (err: any) {
-      console.error('Error fetching channels:', err);
-      // On error, show mock data instead
-      setChannelsData([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { data: channelsData, isLoading, error } = useHomepageChannels(10);
 
   const handleChannelPress = (channelId: string, channelSlug: string) => {
     router.push(`/channel-profile?slug=${channelSlug}&id=${channelId}`);
@@ -43,38 +16,6 @@ export function ChannelsListSection() {
   const handleSeeAllPress = () => {
     router.push('/(tabs)/discover');
   };
-
-  // Mock data for fallback
-  const mockData = [
-    {
-      id: 'mock-1',
-      name: 'Rhapsody TV',
-      slug: 'rhapsody-tv',
-      logoSource: require('@/assets/logo/Logo.png') as ImageSourcePropType,
-      isLive: true,
-    },
-    {
-      id: 'mock-2',
-      name: 'RORK TV',
-      slug: 'rork-tv',
-      logoSource: require('@/assets/logo/logo-2.png') as ImageSourcePropType,
-      isLive: true,
-    },
-    {
-      id: 'mock-3',
-      name: 'LingualTV',
-      slug: 'lingual-tv',
-      logoSource: require('@/assets/logo/logo-3.png') as ImageSourcePropType,
-      isLive: true,
-    },
-    {
-      id: 'mock-4',
-      name: 'Rebroadcast Channel',
-      slug: 'rebroadcast-channel',
-      logoSource: require('@/assets/logo/logo-1.png') as ImageSourcePropType,
-      isLive: true,
-    },
-  ];
 
   // Show loading state with skeleton
   if (isLoading) {
@@ -101,18 +42,20 @@ export function ChannelsListSection() {
     );
   }
 
-  // Show mock data if no channels data available
-  const displayData = channelsData.length > 0 
-    ? channelsData.map((channel) => ({
-        id: channel.id,
-        name: channel.name,
-        slug: channel.slug,
-        logoSource: channel.logoUrl 
-          ? { uri: channel.logoUrl } as ImageSourcePropType
-          : require('@/assets/logo/Logo.png') as ImageSourcePropType,
-        isLive: false, // API doesn't provide isLive, set to false
-      }))
-    : mockData;
+  // Don't show section if no data or error
+  if (error || !channelsData || channelsData.length === 0) {
+    return null;
+  }
+
+  const displayData = channelsData.map((channel) => ({
+    id: channel.id,
+    name: channel.name,
+    slug: channel.slug,
+    logoSource: channel.logoUrl 
+      ? { uri: channel.logoUrl } as ImageSourcePropType
+      : require('@/assets/logo/Logo.png') as ImageSourcePropType,
+    isLive: false, // API doesn't provide isLive for channels list
+  }));
 
   return (
     <View style={styles.container}>
@@ -123,9 +66,6 @@ export function ChannelsListSection() {
           <Text style={styles.seeAllText}>See all</Text>
         </Pressable>
       </View>
-      {channelsData.length === 0 && (
-        <Text style={styles.noDataText}>No channels available</Text>
-      )}
 
       {/* Channels Scroll */}
       <ScrollView

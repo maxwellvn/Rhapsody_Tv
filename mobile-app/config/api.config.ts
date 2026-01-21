@@ -6,7 +6,7 @@
 export const API_CONFIG = {
   // Backend API base URL
   // Use local IP for React Native/Expo (localhost doesn't work in mobile)
-  BASE_URL: 'http://172.20.10.3:3000/v1',
+  BASE_URL: 'http://172.16.200.105:3000/v1',
   
   // Timeout duration in milliseconds
   TIMEOUT: 30000,
@@ -52,10 +52,12 @@ export const API_ENDPOINTS = {
   CHANNELS: {
     LIST: '/channels',
     DETAILS: (id: string) => `/channels/${id}`,
-    VIDEOS: (id: string) => `/channels/${id}/videos`,
+    BY_SLUG: (slug: string) => `/channels/slug/${slug}`,
+    // Note: Videos endpoint doesn't exist - use VOD.LIST and filter by channelId
     SUBSCRIBE: (id: string) => `/channels/${id}/subscribe`,
     UNSUBSCRIBE: (id: string) => `/channels/${id}/unsubscribe`,
     SUBSCRIPTIONS: '/channels/subscriptions',
+    SUBSCRIPTION_STATUS: (id: string) => `/channels/${id}/subscription-status`,
   },
   
   // Playlists
@@ -77,11 +79,20 @@ export const API_ENDPOINTS = {
     VIEW: (videoId: string) => `/videos/${videoId}/view`,
   },
   
-  // History
+  // History (uses VOD endpoints)
   HISTORY: {
-    WATCH_HISTORY: '/history/watch',
-    SEARCH_HISTORY: '/history/search',
-    CLEAR_HISTORY: '/history/clear',
+    LIST: '/vod/history',
+    UPDATE: (videoId: string) => `/vod/${videoId}/history`,
+    REMOVE: (videoId: string) => `/vod/${videoId}/history`,
+    CLEAR: '/vod/history',
+  },
+
+  // Watchlist (uses VOD endpoints)
+  WATCHLIST: {
+    LIST: '/vod/watchlist',
+    ADD: (videoId: string) => `/vod/${videoId}/watchlist`,
+    REMOVE: (videoId: string) => `/vod/${videoId}/watchlist`,
+    STATUS: (videoId: string) => `/vod/${videoId}/watchlist-status`,
   },
   
   // Downloads
@@ -94,7 +105,10 @@ export const API_ENDPOINTS = {
   // Notifications
   NOTIFICATIONS: {
     LIST: '/notifications',
+    UNREAD_COUNT: '/notifications/unread-count',
     READ: (id: string) => `/notifications/${id}/read`,
+    READ_ALL: '/notifications/read-all',
+    DELETE: (id: string) => `/notifications/${id}`,
     SETTINGS: '/notifications/settings',
     UPDATE_SETTINGS: '/notifications/settings/update',
   },
@@ -113,5 +127,53 @@ export const API_ENDPOINTS = {
     PROGRAMS: '/homepage/programs',
     FEATURED_VIDEOS: '/homepage/featured-videos',
     PROGRAM_HIGHLIGHTS: '/homepage/program-highlights',
+    LIVESTREAMS: '/homepage/livestreams',
+    UPDATE_PROGRESS: '/homepage/update-progress',
+    WATCH_LIVESTREAM: (id: string) => `/homepage/watch-livestream/${id}`,
+  },
+
+  // Livestreams (public endpoints)
+  LIVESTREAMS: {
+    LIST: '/livestreams',
+    LIVE_NOW: '/livestreams/live',
+    UPCOMING: '/livestreams/upcoming',
+    BY_CHANNEL: (channelId: string) => `/livestreams/channel/${channelId}`,
+    BY_PROGRAM: (programId: string) => `/livestreams/program/${programId}`,
+    DETAILS: (id: string) => `/livestreams/${id}`,
+    STATS: (id: string) => `/livestreams/${id}/stats`,
+    LIKE: (id: string) => `/livestreams/${id}/like`,
+    LIKE_STATUS: (id: string) => `/livestreams/${id}/like-status`,
+  },
+
+  // VOD (Video on Demand)
+  VOD: {
+    LIST: '/vod',
+    DETAILS: (id: string) => `/vod/${id}`,
+    LIKE: (id: string) => `/vod/${id}/like`,
+    LIKE_STATUS: (id: string) => `/vod/${id}/like-status`,
+    COMMENTS: (id: string) => `/vod/${id}/comments`,
+    REPLY: (videoId: string, commentId: string) => `/vod/${videoId}/comments/${commentId}/reply`,
+    DELETE_COMMENT: (commentId: string) => `/vod/comments/${commentId}`,
+    LIKE_COMMENT: (commentId: string) => `/vod/comments/${commentId}/like`,
+    COMMENT_LIKE_STATUS: (commentId: string) => `/vod/comments/${commentId}/like-status`,
+  },
+
+  // Schedule - Note: No dedicated schedule endpoint exists in backend
+  // Schedule data comes from programs with startTime/endTime
+  SCHEDULE: {
+    // These endpoints don't exist - using homepage/programs instead
+    LIST: '/homepage/programs',
+    BY_DATE: (date: string) => `/homepage/programs?date=${date}`,
+    BY_CHANNEL: (channelId: string) => `/homepage/programs?channelId=${channelId}`,
+  },
+
+  // Programs (public endpoints)
+  PROGRAMS: {
+    LIST: '/programs',
+    DETAILS: (id: string) => `/programs/${id}`,
+    SUBSCRIBE: (id: string) => `/programs/${id}/subscribe`,
+    UNSUBSCRIBE: (id: string) => `/programs/${id}/unsubscribe`,
+    SUBSCRIPTIONS: '/programs/subscriptions',
+    SUBSCRIPTION_STATUS: (id: string) => `/programs/${id}/subscription-status`,
   },
 } as const;

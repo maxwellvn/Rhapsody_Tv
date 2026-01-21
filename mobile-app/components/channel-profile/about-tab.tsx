@@ -1,22 +1,36 @@
 import { FONTS } from '@/styles/global';
 import { fs, hp, spacing, wp } from '@/utils/responsive';
 import { Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ChannelDetail } from '@/types/api.types';
 
 type AboutTabProps = {
-  description?: string;
-  website?: string;
-  joinedDate?: string;
-  subscriberCount?: string;
+  channel?: ChannelDetail;
 };
 
-export function AboutTab({
-  description = "This Morning with Rhapsody of Realities is a daily live program broadcast on Mondays to Saturdays. Its sole purpose is to inspire, uplift, and keep viewers up-to-date with the amazing feats of our Messenger Angel, Rhapsody of Realities, through insightful interviews, testimonies and discussions with guests from all over the globe.",
-  website = "https://rhapsodydailies.org",
-  joinedDate = "Joined 14 Jul 2016",
-  subscriberCount = "500k subscribers",
-}: AboutTabProps) {
+export function AboutTab({ channel }: AboutTabProps) {
+  const description = channel?.description || 'No description available';
+  const website = channel?.websiteUrl || '';
+  const subscriberCount = channel?.subscriberCount || 0;
+  const createdAt = channel?.createdAt;
+
+  // Format subscriber count
+  const formatCount = (count: number): string => {
+    if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M subscribers`;
+    if (count >= 1000) return `${(count / 1000).toFixed(1)}k subscribers`;
+    return `${count} subscribers`;
+  };
+
+  // Format joined date
+  const formatJoinedDate = (dateString?: string): string => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return `Joined ${date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+  };
+
   const handleWebsitePress = () => {
-    Linking.openURL(website).catch((err) => console.error('Failed to open URL:', err));
+    if (website) {
+      Linking.openURL(website).catch((err) => console.error('Failed to open URL:', err));
+    }
   };
 
   return (
@@ -32,28 +46,32 @@ export function AboutTab({
         <Text style={styles.sectionTitle}>More info</Text>
 
         {/* Website */}
-        <Pressable onPress={handleWebsitePress} style={styles.infoRow}>
-          <View style={styles.iconContainer}>
-            <Image
-              source={require('@/assets/Icons/globe.png')}
-              style={styles.icon}
-              resizeMode="contain"
-            />
-          </View>
-          <Text style={styles.linkText}>{website}</Text>
-        </Pressable>
+        {website && (
+          <Pressable onPress={handleWebsitePress} style={styles.infoRow}>
+            <View style={styles.iconContainer}>
+              <Image
+                source={require('@/assets/Icons/globe.png')}
+                style={styles.icon}
+                resizeMode="contain"
+              />
+            </View>
+            <Text style={styles.linkText}>{website}</Text>
+          </Pressable>
+        )}
 
         {/* Joined Date */}
-        <View style={styles.infoRow}>
-          <View style={styles.iconContainer}>
-            <Image
-              source={require('@/assets/Icons/info.png')}
-              style={styles.icon}
-              resizeMode="contain"
-            />
+        {createdAt && (
+          <View style={styles.infoRow}>
+            <View style={styles.iconContainer}>
+              <Image
+                source={require('@/assets/Icons/info.png')}
+                style={styles.icon}
+                resizeMode="contain"
+              />
+            </View>
+            <Text style={styles.infoText}>{formatJoinedDate(createdAt)}</Text>
           </View>
-          <Text style={styles.infoText}>{joinedDate}</Text>
-        </View>
+        )}
 
         {/* Subscriber Count */}
         <View style={styles.infoRow}>
@@ -64,7 +82,7 @@ export function AboutTab({
               resizeMode="contain"
             />
           </View>
-          <Text style={styles.infoText}>{subscriberCount}</Text>
+          <Text style={styles.infoText}>{formatCount(subscriberCount)}</Text>
         </View>
       </View>
     </View>

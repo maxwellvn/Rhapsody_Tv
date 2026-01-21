@@ -1,13 +1,31 @@
-import { LogOut, Menu, X } from 'lucide-react';
+import { LogOut, Menu, X, LayoutDashboard, Users, Tv, Video, Calendar, Radio } from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { ROUTES } from '@/utils/constants';
+import { cn } from '@/lib/utils';
+
+const navItems = [
+  { label: 'Dashboard', icon: LayoutDashboard, path: ROUTES.DASHBOARD },
+  { label: 'Users', icon: Users, path: ROUTES.USERS },
+  { label: 'Channels', icon: Tv, path: ROUTES.CHANNELS },
+  { label: 'Videos', icon: Video, path: ROUTES.VIDEOS },
+  { label: 'Programs', icon: Calendar, path: ROUTES.PROGRAMS },
+  { label: 'Livestreams', icon: Radio, path: ROUTES.LIVESTREAMS },
+];
 
 const DashboardHeader = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const isActive = (path: string) => {
+    if (path === ROUTES.DASHBOARD) {
+      return location.pathname === path;
+    }
+    return location.pathname.startsWith(path);
+  };
 
   const handleLogout = () => {
     logout();
@@ -64,16 +82,43 @@ const DashboardHeader = () => {
               <span className="text-sm">Welcome,</span>
               <span className="text-sm font-semibold text-black">{user?.fullName || 'Admin'}</span>
             </div>
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-linear-to-r from-[#0000FF] to-[#0000CC] text-white rounded-lg hover:from-[#0000CC] hover:to-[#000099] transition-all duration-300 font-medium text-sm shadow-lg hover:shadow-xl"
-              style={{
-                boxShadow: '0 4px 15px rgba(0, 0, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-              }}
-            >
-              <LogOut size={18} />
-              <span>Logout</span>
-            </button>
+            
+            {/* Mobile Navigation Links */}
+            <nav className="py-2 space-y-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const active = isActive(item.path);
+                return (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={cn(
+                      'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200',
+                      active
+                        ? 'bg-[#0000FF] text-white'
+                        : 'text-gray-600 hover:bg-gray-100 hover:text-black'
+                    )}
+                  >
+                    <Icon className={cn('w-5 h-5', active ? 'text-white' : 'text-gray-500')} />
+                    <span className="font-medium text-sm">{item.label}</span>
+                  </NavLink>
+                );
+              })}
+            </nav>
+            
+            <div className="pt-2 border-t border-[#D0D0D0]">
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-linear-to-r from-[#0000FF] to-[#0000CC] text-white rounded-lg hover:from-[#0000CC] hover:to-[#000099] transition-all duration-300 font-medium text-sm shadow-lg hover:shadow-xl"
+                style={{
+                  boxShadow: '0 4px 15px rgba(0, 0, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                }}
+              >
+                <LogOut size={18} />
+                <span>Logout</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

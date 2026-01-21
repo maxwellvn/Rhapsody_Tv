@@ -12,6 +12,7 @@ import {
 
 interface ChannelsChartProps {
   data: Array<{ name: string; videos: number }>;
+  isLoading?: boolean;
 }
 
 // Gradient colors for bars - more vibrant and modern
@@ -26,7 +27,30 @@ const barColors = [
 // Solid colors for fallback
 const solidColors = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444'];
 
-const ChannelsChart = ({ data }: ChannelsChartProps) => {
+const ChannelsChart = ({ data, isLoading }: ChannelsChartProps) => {
+  // Don't render if no data
+  if (!data || data.length === 0) {
+    return (
+      <div 
+        className="bg-white/90 backdrop-blur-sm p-6 md:p-8 rounded-2xl border border-white/50 shadow-xl mb-8"
+        style={{
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.5) inset',
+          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%)',
+        }}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg md:text-xl font-semibold text-black flex items-center gap-2">
+            <Radio className="text-[#0000FF]" size={22} />
+            Videos per Channel
+          </h3>
+        </div>
+        <div className="flex items-center justify-center h-64 text-gray-500">
+          {isLoading ? 'Loading channel data...' : 'No channels available'}
+        </div>
+      </div>
+    );
+  }
+
   // Custom tooltip with better styling
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -129,7 +153,7 @@ const ChannelsChart = ({ data }: ChannelsChartProps) => {
             radius={[12, 12, 0, 0]}
             barSize={60}
           >
-            {data.map((entry, index) => (
+            {data.map((_, index) => (
               <Cell 
                 key={`cell-${index}`} 
                 fill={`url(#barGradient${index % barColors.length})`}

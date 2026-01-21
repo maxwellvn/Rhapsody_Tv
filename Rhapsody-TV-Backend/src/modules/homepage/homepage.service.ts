@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Channel, ChannelDocument } from '../channel/schemas/channel.schema';
 import { Program, ProgramDocument } from '../channel/schemas/program.schema';
 import {
@@ -12,6 +12,7 @@ import {
   LiveStream,
   LiveStreamDocument,
   LiveStreamStatus,
+  LiveStreamScheduleType,
 } from '../stream/schemas/live-stream.schema';
 import { ContinueWatchingService } from '../stream/services/continue-watching.service';
 import type {
@@ -19,6 +20,7 @@ import type {
   HomepageProgramDto,
   HomepageVideoDto,
   HomepageContinueWatchingDto,
+  HomepageLivestreamDto,
 } from './dto';
 
 @Injectable()
@@ -54,14 +56,22 @@ export class HomepageService {
       id: program._id.toString(),
       title: program.title,
       description: program.description,
-      startTime: program.startTime.toISOString(),
-      endTime: program.endTime.toISOString(),
+      startTime: program.startTime?.toISOString() || new Date().toISOString(),
+      endTime: program.endTime?.toISOString() || new Date().toISOString(),
       isLive: program.isLive,
       channel: populatedChannel
         ? this.toChannelDto(populatedChannel)
         : undefined,
       videoId: program.videoId?.toString(),
       liveStreamId: program.liveStreamId?.toString(),
+      // Schedule fields
+      scheduleType: program.scheduleType,
+      startTimeOfDay: program.startTimeOfDay,
+      endTimeOfDay: program.endTimeOfDay,
+      daysOfWeek: program.daysOfWeek,
+      durationInMinutes: program.durationInMinutes,
+      timezone: program.timezone,
+      thumbnailUrl: program.thumbnailUrl,
     };
   }
 
@@ -79,6 +89,34 @@ export class HomepageService {
       durationSeconds: video.durationSeconds,
       channel: populatedChannel
         ? this.toChannelDto(populatedChannel)
+        : undefined,
+    };
+  }
+
+  private toLivestreamDto(livestream: LiveStreamDocument): HomepageLivestreamDto {
+    const populatedChannel = livestream.populated('channelId')
+      ? (livestream.channelId as unknown as ChannelDocument)
+      : undefined;
+    const populatedProgram = livestream.populated('programId')
+      ? (livestream.programId as unknown as ProgramDocument)
+      : undefined;
+
+    return {
+      id: livestream._id.toString(),
+      title: livestream.title,
+      description: livestream.description,
+      scheduleType: livestream.scheduleType || 'continuous',
+      status: livestream.status,
+      scheduledStartAt: livestream.scheduledStartAt?.toISOString(),
+      scheduledEndAt: livestream.scheduledEndAt?.toISOString(),
+      startedAt: livestream.startedAt?.toISOString(),
+      thumbnailUrl: livestream.thumbnailUrl,
+      playbackUrl: livestream.playbackUrl,
+      channel: populatedChannel
+        ? this.toChannelDto(populatedChannel)
+        : undefined,
+      program: populatedProgram
+        ? this.toProgramDto(populatedProgram)
         : undefined,
     };
   }
@@ -187,6 +225,27 @@ export class HomepageService {
     return videos.map((v) => this.toVideoDto(v));
   }
 
+  async getLivestreams(limit = 10): Promise<HomepageLivestreamDto[]> {
+    const safeLimit = Math.min(Math.max(limit, 1), 50);
+    
+    // Get livestreams that are live or scheduled
+    const livestreams = await this.liveStreamModel
+      .find({
+        status: { $in: [LiveStreamStatus.LIVE, LiveStreamStatus.SCHEDULED] },
+      })
+      .limit(safeLimit)
+      .populate('channelId', 'name slug logoUrl coverImageUrl')
+      .populate('programId', 'title description thumbnailUrl')
+      .sort({ 
+        // Live streams first, then by scheduled start time
+        status: 1, 
+        scheduledStartAt: 1, 
+        createdAt: -1 
+      });
+    
+    return livestreams.map((l) => this.toLivestreamDto(l));
+  }
+
   async getVideoById(videoId: string): Promise<VideoDocument | null> {
     return this.videoModel
       .findById(videoId)
@@ -197,7 +256,10 @@ export class HomepageService {
   async getLivestreamById(
     livestreamId: string,
   ): Promise<HomepageProgramDto | null> {
-    const livestream = await this.liveStreamModel.findById(livestreamId).lean();
+    const livestream = await this.liveStreamModel
+      .findById(livestreamId)
+      .populate('channelId', 'name slug logoUrl coverImageUrl')
+      .lean();
 
     if (!livestream) {
       return null;
@@ -215,6 +277,15 @@ export class HomepageService {
       return this.toProgramDto(program);
     }
 
+    // Get channel data from the livestream
+    const channel = livestream.channelId as unknown as {
+      _id: Types.ObjectId;
+      name: string;
+      slug: string;
+      logoUrl?: string;
+      coverImageUrl?: string;
+    };
+
     return {
       id: livestream._id.toString(),
       title: livestream.title,
@@ -223,9 +294,21 @@ export class HomepageService {
         livestream.startedAt?.toISOString() || new Date().toISOString(),
       endTime: new Date().toISOString(),
       isLive: livestream.status === LiveStreamStatus.LIVE,
-      channel: undefined,
+      viewerCount: (livestream as any).viewerCount || 0,
+      startedAt: livestream.startedAt?.toISOString(),
+      channel: channel
+        ? {
+            id: channel._id?.toString() || livestream.channelId?.toString(),
+            name: channel.name || 'Rhapsody TV',
+            slug: channel.slug || '',
+            logoUrl: channel.logoUrl,
+            coverImageUrl: channel.coverImageUrl,
+          }
+        : undefined,
       videoId: undefined,
       liveStreamId: livestream._id.toString(),
+      playbackUrl: livestream.playbackUrl,
+      thumbnailUrl: livestream.thumbnailUrl,
     };
   }
 }

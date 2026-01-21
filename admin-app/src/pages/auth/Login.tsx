@@ -2,6 +2,7 @@
 import Loader from '@/components/common/Loader';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
+import { authService } from '@/services/api/auth.service';
 import { ROUTES } from '@/utils/constants';
 import { Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
@@ -28,19 +29,17 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      // TODO: Replace with actual API call when endpoint is ready
-      // const response = await authService.login({ email, password });
+      const response = await authService.login({ email, password });
       
-      // Mock login for now - remove when API is ready
-      const mockUser = {
-        id: '1',
-        email: email,
-        fullName: 'Admin User',
-        roles: ['admin'],
-        isEmailVerified: true,
-      };
+      const { user, accessToken, refreshToken } = response.data;
       
-      login(mockUser, 'mock-access-token', 'mock-refresh-token');
+      // Check if user has admin role
+      if (!user.roles.includes('admin')) {
+        toast.error('Access denied. Admin privileges required.');
+        return;
+      }
+      
+      login(user, accessToken, refreshToken);
       toast.success('Login successful!');
       navigate(ROUTES.DASHBOARD);
     } catch (error: any) {

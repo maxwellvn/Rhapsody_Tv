@@ -1,12 +1,24 @@
 import { FONTS } from '@/styles/global';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, ImageSourcePropType, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+
+type FirstComment = {
+  message: string;
+  user: {
+    fullName: string;
+    avatar?: string;
+  };
+};
 
 type CommentsProps = {
   commentCount: number;
+  firstComment?: FirstComment | null;
   onPress?: () => void;
 };
 
-export function Comments({ commentCount, onPress }: CommentsProps) {
+export function Comments({ commentCount, firstComment, onPress }: CommentsProps) {
+  const hasComments = commentCount > 0 && firstComment;
+
   return (
     <Pressable onPress={onPress} style={styles.container}>
       <View style={styles.header}>
@@ -14,16 +26,33 @@ export function Comments({ commentCount, onPress }: CommentsProps) {
         <Text style={styles.count}>{commentCount}</Text>
       </View>
 
-      <View style={styles.commentItem}>
-        <Image
-          source={require('@/assets/images/Avatar.png')}
-          style={styles.avatar}
-          resizeMode="contain"
-        />
-        <View style={styles.commentContent}>
-          <Text style={styles.commentText}>Glory!!!!!!</Text>
+      {hasComments ? (
+        <View style={styles.commentItem}>
+          <Image
+            source={
+              firstComment.user.avatar 
+                ? { uri: firstComment.user.avatar } as ImageSourcePropType
+                : require('@/assets/images/Avatar.png') as ImageSourcePropType
+            }
+            style={styles.avatar}
+            resizeMode="cover"
+          />
+          <View style={styles.commentContent}>
+            <Text style={styles.userName}>{firstComment.user.fullName}</Text>
+            <Text style={styles.commentText} numberOfLines={2}>
+              {firstComment.message}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#737373" />
         </View>
-      </View>
+      ) : (
+        <View style={styles.emptyState}>
+          <Ionicons name="chatbubble-outline" size={24} color="#A0A0A0" />
+          <Text style={styles.emptyText}>
+            {commentCount === 0 ? 'No comments yet. Be the first to comment!' : 'Tap to view comments'}
+          </Text>
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -55,7 +84,7 @@ const styles = StyleSheet.create({
   },
   commentItem: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: 12,
   },
   avatar: {
@@ -66,10 +95,28 @@ const styles = StyleSheet.create({
   commentContent: {
     flex: 1,
   },
+  userName: {
+    fontSize: 13,
+    fontFamily: FONTS.medium,
+    color: '#000000',
+    marginBottom: 2,
+  },
   commentText: {
     fontSize: 14,
     fontFamily: FONTS.regular,
     color: '#000000',
     lineHeight: 20,
+  },
+  emptyState: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 8,
+  },
+  emptyText: {
+    fontSize: 14,
+    fontFamily: FONTS.regular,
+    color: '#737373',
   },
 });

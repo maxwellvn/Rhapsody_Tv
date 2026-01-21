@@ -1,43 +1,18 @@
 import { FONTS } from '@/styles/global';
-import { homepageService } from '@/services/homepage.service';
-import { HomepageProgram } from '@/types/api.types';
+import { useHomepagePrograms } from '@/hooks/queries/useHomepageQueries';
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View, ImageSourcePropType } from 'react-native';
 import { VideoCard } from './video-card';
-import { useEffect, useState } from 'react';
-import { wp, hp, fs, spacing, borderRadius, dimensions } from '@/utils/responsive';
+import { fs, spacing, dimensions } from '@/utils/responsive';
 import { ProgramsSkeleton } from '../skeleton';
 
 export function ProgramsSection() {
-  const [programsData, setProgramsData] = useState<HomepageProgram[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: programsData, isLoading, error } = useHomepagePrograms(10);
 
-  useEffect(() => {
-    fetchPrograms();
-  }, []);
-
-  const fetchPrograms = async () => {
-    try {
-      setIsLoading(true);
-      const response = await homepageService.getPrograms(10);
-      
-      if (response.success && response.data && response.data.length > 0) {
-        setProgramsData(response.data);
-      } else {
-        // No data available - will show mock data
-        setProgramsData([]);
-      }
-    } catch (err: any) {
-      console.error('Error fetching programs:', err);
-      // On error, show mock data instead
-      setProgramsData([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleCardPress = (programId: string, videoId: string) => {
-    if (videoId) {
+  const handleCardPress = (programId: string, videoId?: string, livestreamId?: string, isLive?: boolean) => {
+    if (isLive && livestreamId) {
+      router.push(`/live-video?id=${livestreamId}`);
+    } else if (videoId) {
       router.push(`/video?id=${videoId}`);
     } else {
       router.push(`/program-profile?id=${programId}`);
@@ -48,56 +23,29 @@ export function ProgramsSection() {
     router.push('/(tabs)/discover');
   };
 
-  // Mock data for fallback
-  const mockData = [
-    {
-      id: 'mock-1',
-      videoId: 'mock-video-1',
-      title: 'Rhapsody Dailies',
-      coverImageUrl: require('@/assets/images/Image-4.png'),
-      badgeLabel: 'Series',
-      badgeColor: '#2563EB',
-      isLive: false,
-    },
-    {
-      id: 'mock-2',
-      videoId: 'mock-video-2',
-      title: 'Rhapsody On The Daily Frontier',
-      coverImageUrl: require('@/assets/images/Image-1.png'),
-      badgeLabel: 'New',
-      badgeColor: '#2563EB',
-      isLive: false,
-    },
-    {
-      id: 'mock-3',
-      videoId: 'mock-video-3',
-      title: 'The Day God Spoke My Language',
-      coverImageUrl: require('@/assets/images/Image-5.png'),
-      badgeLabel: 'Live',
-      badgeColor: '#DC2626',
-      isLive: true,
-    },
-  ];
-
-  // Show loading state with skeleton
   if (isLoading) {
     return <ProgramsSkeleton />;
   }
 
-  // Show mock data if no programs data available
-  const displayData = programsData.length > 0
-    ? programsData.map((program) => ({
-        id: program.id,
-        videoId: program.videoId,
-        title: program.title,
-        coverImageUrl: program.channel.coverImageUrl
-          ? { uri: program.channel.coverImageUrl } as ImageSourcePropType
-          : require('@/assets/images/Image-4.png') as ImageSourcePropType,
-        badgeLabel: program.isLive ? 'Live' : 'Series',
-        badgeColor: program.isLive ? '#DC2626' : '#2563EB',
-        isLive: program.isLive,
-      }))
-    : mockData;
+  if (error || !programsData || programsData.length === 0) {
+    return null; // Don't show section if no data
+  }
+
+  const displayData = programsData.map((program) => ({
+    id: program.id,
+    videoId: program.videoId,
+    livestreamId: program.livestreamId,
+    title: program.title,
+    // Use thumbnailUrl first, fall back to channel cover image
+    coverImageUrl: program.thumbnailUrl
+      ? { uri: program.thumbnailUrl } as ImageSourcePropType
+      : program.channel?.coverImageUrl
+        ? { uri: program.channel.coverImageUrl } as ImageSourcePropType
+        : require('@/assets/images/Image-4.png') as ImageSourcePropType,
+    badgeLabel: program.isLive ? 'Live' : 'Series',
+    badgeColor: program.isLive ? '#DC2626' : '#2563EB',
+    isLive: program.isLive,
+  }));
 
   return (
     <View style={styles.container}>
@@ -108,9 +56,6 @@ export function ProgramsSection() {
           <Text style={styles.seeAllText}>See all</Text>
         </Pressable>
       </View>
-      {programsData.length === 0 && (
-        <Text style={styles.noDataText}>No programs available</Text>
-      )}
 
       {/* Videos Scroll */}
       <ScrollView
@@ -127,7 +72,7 @@ export function ProgramsSection() {
             badgeLabel={program.badgeLabel}
             badgeColor={program.badgeColor}
             showBadge={true}
-            onPress={() => handleCardPress(program.id, program.videoId)}
+            onPress={() => handleCardPress(program.id, program.videoId, program.livestreamId, program.isLive)}
           />
         ))}
       </ScrollView>

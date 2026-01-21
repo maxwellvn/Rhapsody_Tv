@@ -1,20 +1,25 @@
-import { dimensions, hp, spacing } from '@/utils/responsive';
+import { dimensions, hp, spacing, wp } from '@/utils/responsive';
 import { useEvent } from 'expo';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Image, ImageSourcePropType, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { ActivityIndicator, Image, ImageSourcePropType, Pressable, StyleSheet, View } from 'react-native';
 import { Badge } from './badge';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 
 type VideoPlayerProps = {
   videoUri?: string;
   thumbnailSource?: ImageSourcePropType;
   isLive?: boolean;
+  showBackButton?: boolean;
 };
 
-export function VideoPlayer({ videoUri, thumbnailSource, isLive = false }: VideoPlayerProps) {
+export function VideoPlayer({ videoUri, thumbnailSource, isLive = false, showBackButton = true }: VideoPlayerProps) {
   const [isLoading, setIsLoading] = useState(true);
+  const [showControls, setShowControls] = useState(true);
   const videoViewRef = useRef<VideoView>(null);
+  const hideControlsTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const player = useVideoPlayer(videoUri || null, (player) => {
     if (videoUri) {
@@ -46,8 +51,36 @@ export function VideoPlayer({ videoUri, thumbnailSource, isLive = false }: Video
     await ScreenOrientation.unlockAsync();
   };
 
+  // Show/hide controls based on interaction
+  const handleContainerPress = useCallback(() => {
+    setShowControls(true);
+    
+    // Clear existing timeout
+    if (hideControlsTimeout.current) {
+      clearTimeout(hideControlsTimeout.current);
+    }
+    
+    // Hide after 3 seconds
+    hideControlsTimeout.current = setTimeout(() => {
+      setShowControls(false);
+    }, 3000);
+  }, []);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hideControlsTimeout.current) {
+        clearTimeout(hideControlsTimeout.current);
+      }
+    };
+  }, []);
+
+  const handleBack = () => {
+    router.back();
+  };
+
   return (
-    <View style={styles.container}>
+    <Pressable style={styles.container} onPress={handleContainerPress}>
       {videoUri ? (
         <>
           <VideoView
@@ -72,7 +105,14 @@ export function VideoPlayer({ videoUri, thumbnailSource, isLive = false }: Video
           )}
 
           {/* Custom Overlay Controls */}
-          <View style={styles.overlay}>
+          <View style={styles.overlay} pointerEvents="box-none">
+            {/* Back Button */}
+            {showBackButton && showControls && (
+              <Pressable style={styles.backButton} onPress={handleBack} hitSlop={12}>
+                <Ionicons name="arrow-back" size={wp(24)} color="#FFFFFF" />
+              </Pressable>
+            )}
+
             {/* Live Badge Overlay */}
             {isLive && (
               <View style={styles.liveBadgeContainer}>
@@ -82,13 +122,21 @@ export function VideoPlayer({ videoUri, thumbnailSource, isLive = false }: Video
           </View>
         </>
       ) : (
-        <Image
-          source={thumbnailSource || require('@/assets/images/carusel-2.png')}
-          style={styles.thumbnail}
-          resizeMode="contain"
-        />
+        <>
+          <Image
+            source={thumbnailSource || require('@/assets/images/carusel-2.png')}
+            style={styles.thumbnail}
+            resizeMode="contain"
+          />
+          {/* Back Button for thumbnail view */}
+          {showBackButton && (
+            <Pressable style={styles.backButton} onPress={handleBack} hitSlop={12}>
+              <Ionicons name="arrow-back" size={wp(24)} color="#FFFFFF" />
+            </Pressable>
+          )}
+        </>
       )}
-    </View>
+    </Pressable>
   );
 }
 
@@ -126,12 +174,23 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    pointerEvents: 'box-none',
+  },
+  backButton: {
+    position: 'absolute',
+    top: hp(12),
+    left: wp(12),
+    width: wp(40),
+    height: wp(40),
+    borderRadius: wp(20),
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 20,
   },
   liveBadgeContainer: {
     position: 'absolute',
     top: dimensions.isTablet ? spacing.xl : spacing.lg,
-    left: dimensions.isTablet ? spacing.lg : spacing.md,
+    left: wp(60), // Moved to the right of back button
     zIndex: 5,
   },
 });

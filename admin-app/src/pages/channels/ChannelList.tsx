@@ -1,26 +1,22 @@
-import DashboardHeader from '@/components/layout/DashboardHeader';
+import MainLayout from '@/components/layout/MainLayout';
 import CreateChannelForm from '@/components/channels/CreateChannelForm';
 import ChannelsTable from '@/components/channels/ChannelsTable';
 
 const ChannelList = () => {
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
-      <DashboardHeader />
+    <MainLayout>
+      <div className="mb-8">
+        <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-black mb-2">
+          Channels
+        </h1>
+        <p className="text-sm md:text-base text-[#666666]">
+          Manage TV channels and content
+        </p>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
-        <div className="mb-8">
-          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-black mb-2">
-            Channels
-          </h1>
-          <p className="text-sm md:text-base text-[#666666]">
-            Manage TV channels and content
-          </p>
-        </div>
-
-        <CreateChannelForm />
-        <ChannelsTable />
-      </main>
-    </div>
+      <CreateChannelForm />
+      <ChannelsTable />
+    </MainLayout>
   );
 };
 

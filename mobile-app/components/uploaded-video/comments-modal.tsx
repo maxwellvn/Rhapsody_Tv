@@ -2,6 +2,7 @@ import { FONTS } from '@/styles/global';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import {
+  ActivityIndicator,
   Image,
   Pressable,
   ScrollView,
@@ -10,44 +11,53 @@ import {
   TextInput,
   View,
 } from 'react-native';
-
-type Comment = {
-  id: string;
-  username: string;
-  avatar: any;
-  text: string;
-  timeAgo: string;
-  likes: number;
-  replies: number;
-  hasReplies?: boolean;
-};
+import { useVodComments, useAddVodComment, useToggleCommentLike } from '@/hooks/queries/useVodQueries';
 
 type CommentsModalProps = {
+  videoId: string;
   onClose: () => void;
 };
 
-export function CommentsModal({ onClose }: CommentsModalProps) {
+export function CommentsModal({ videoId, onClose }: CommentsModalProps) {
   const [activeTab, setActiveTab] = useState<'Top' | 'Newest'>('Top');
   const [comment, setComment] = useState('');
 
-  // Sample comments
-  const comments: Comment[] = Array(4).fill(null).map((_, i) => ({
-    id: `comment-${i}`,
-    username: '@lennox_koko',
-    avatar: require('@/assets/images/Avatar.png'),
-    text: "What a marvelous time in his presence. It's truly amazing.",
-    timeAgo: '12h ago',
-    likes: 243,
-    replies: 12,
-    hasReplies: i === 1, // Second comment has replies
-  }));
+  const { data: commentsData, isLoading, error } = useVodComments(videoId, 1, 50);
+  const addCommentMutation = useAddVodComment();
+  const toggleLikeMutation = useToggleCommentLike();
+
+  // Format time ago
+  const formatTimeAgo = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    
+    if (diffHours < 1) return 'just now';
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return `${Math.floor(diffDays / 7)}w ago`;
+  };
 
   const handleSend = () => {
-    if (comment.trim()) {
-      console.log('Send comment:', comment);
-      setComment('');
+    if (comment.trim() && videoId) {
+      addCommentMutation.mutate(
+        { videoId, message: comment.trim() },
+        {
+          onSuccess: () => {
+            setComment('');
+          },
+        }
+      );
     }
   };
+
+  const handleLikeComment = (commentId: string) => {
+    toggleLikeMutation.mutate({ videoId, commentId });
+  };
+
+  const comments = commentsData?.comments || [];
 
   return (
     <View style={styles.container}>
@@ -85,47 +95,68 @@ export function CommentsModal({ onClose }: CommentsModalProps) {
         contentContainerStyle={styles.commentsContent}
         showsVerticalScrollIndicator={false}
       >
-        {comments.map((commentItem) => (
+        {isLoading && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#2563EB" />
+          </View>
+        )}
+
+        {error && !isLoading && (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>Failed to load comments</Text>
+          </View>
+        )}
+
+        {!isLoading && !error && comments.length === 0 && (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No comments yet. Be the first to comment!</Text>
+          </View>
+        )}
+
+        {!isLoading && !error && comments.map((commentItem) => (
           <View key={commentItem.id}>
             <View style={styles.commentItem}>
               <Image
-                source={commentItem.avatar}
+                source={require('@/assets/images/Avatar.png')}
                 style={styles.commentAvatar}
                 resizeMode="contain"
               />
               <View style={styles.commentContent}>
                 <View style={styles.commentHeader}>
-                  <Text style={styles.commentUsername}>{commentItem.username}</Text>
-                  <Text style={styles.commentTime}>· {commentItem.timeAgo}</Text>
+                  <Text style={styles.commentUsername}>@{commentItem.user?.fullName || 'Anonymous'}</Text>
+                  <Text style={styles.commentTime}>· {formatTimeAgo(commentItem.createdAt)}</Text>
                   <Pressable style={styles.menuButton}>
                     <Ionicons name="ellipsis-vertical" size={16} color="#666666" />
                   </Pressable>
                 </View>
-                <Text style={styles.commentText}>{commentItem.text}</Text>
+                <Text style={styles.commentText}>{commentItem.message}</Text>
                 
                 {/* Actions */}
                 <View style={styles.commentActions}>
-                  <Pressable style={styles.actionButton}>
+                  <Pressable 
+                    style={styles.actionButton}
+                    onPress={() => handleLikeComment(commentItem.id)}
+                  >
                     <Ionicons name="thumbs-up-outline" size={16} color="#666666" />
-                    <Text style={styles.actionText}>{commentItem.likes}</Text>
+                    <Text style={styles.actionText}>{commentItem.likeCount || 0}</Text>
                   </Pressable>
                   <Pressable style={styles.actionButton}>
                     <Ionicons name="chatbubble-outline" size={16} color="#666666" />
-                    <Text style={styles.actionText}>{commentItem.replies}</Text>
+                    <Text style={styles.actionText}>{commentItem.replies?.length || 0}</Text>
                   </Pressable>
                 </View>
               </View>
             </View>
 
             {/* Replies indicator */}
-            {commentItem.hasReplies && (
+            {commentItem.replies && commentItem.replies.length > 0 && (
               <Pressable style={styles.repliesIndicator}>
                 <Image
-                  source={commentItem.avatar}
+                  source={require('@/assets/images/Avatar.png')}
                   style={styles.replyAvatar}
                   resizeMode="contain"
                 />
-                <Text style={styles.repliesText}>· 2h replies</Text>
+                <Text style={styles.repliesText}>· {commentItem.replies.length} replies</Text>
               </Pressable>
             )}
           </View>
@@ -281,6 +312,20 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.regular,
     color: '#0000FF',
     marginLeft: 8,
+  },
+  loadingContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    fontFamily: FONTS.regular,
+    color: '#666666',
+    textAlign: 'center',
   },
   inputArea: {
     flexDirection: 'row',

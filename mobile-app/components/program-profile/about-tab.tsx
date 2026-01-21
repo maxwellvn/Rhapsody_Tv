@@ -1,23 +1,24 @@
 import { FONTS } from '@/styles/global';
 import { fs, hp, spacing, wp } from '@/utils/responsive';
-import { Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
+import { ProgramDetail } from '@/types/api.types';
 
 type AboutTabProps = {
-  description?: string;
-  website?: string;
-  joinedDate?: string;
-  subscriberCount?: string;
+  program?: ProgramDetail;
 };
 
-export function AboutTab({
-  description = "This Morning with Rhapsody of Realities is a daily live program broadcast on Mondays to Saturdays. Its sole purpose is to inspire, uplift, and keep viewers up-to-date with the amazing feats of our Messenger Angel, Rhapsody of Realities, through insightful interviews, testimonies and discussions with guests from all over the globe.",
-  website = "https://rhapsodydailies.org",
-  joinedDate = "Joined 14 Jul 2016",
-  subscriberCount = "500k subscribers",
-}: AboutTabProps) {
-  const handleWebsitePress = () => {
-    Linking.openURL(website).catch((err) => console.error('Failed to open URL:', err));
-  };
+export function AboutTab({ program }: AboutTabProps) {
+  const description = program?.description || 'No description available for this program.';
+  const channelName = program?.channel?.name || 'Unknown Channel';
+  const subscriberCount = program?.subscriberCount 
+    ? formatCount(program.subscriberCount) + ' subscribers' 
+    : '0 subscribers';
+
+  function formatCount(count: number): string {
+    if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
+    if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
+    return count.toString();
+  }
 
   return (
     <View style={styles.container}>
@@ -31,29 +32,31 @@ export function AboutTab({
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>More info</Text>
 
-        {/* Website */}
-        <Pressable onPress={handleWebsitePress} style={styles.infoRow}>
-          <View style={styles.iconContainer}>
-            <Image
-              source={require('@/assets/Icons/globe.png')}
-              style={styles.icon}
-              resizeMode="contain"
-            />
-          </View>
-          <Text style={styles.linkText}>{website}</Text>
-        </Pressable>
-
-        {/* Joined Date */}
+        {/* Channel */}
         <View style={styles.infoRow}>
           <View style={styles.iconContainer}>
             <Image
-              source={require('@/assets/Icons/info.png')}
+              source={require('@/assets/Icons/Home.png')}
               style={styles.icon}
               resizeMode="contain"
             />
           </View>
-          <Text style={styles.infoText}>{joinedDate}</Text>
+          <Text style={styles.infoText}>Channel: {channelName}</Text>
         </View>
+
+        {/* Category */}
+        {program?.category && (
+          <View style={styles.infoRow}>
+            <View style={styles.iconContainer}>
+              <Image
+                source={require('@/assets/Icons/info.png')}
+                style={styles.icon}
+                resizeMode="contain"
+              />
+            </View>
+            <Text style={styles.infoText}>Category: {program.category}</Text>
+          </View>
+        )}
 
         {/* Subscriber Count */}
         <View style={styles.infoRow}>
@@ -65,6 +68,18 @@ export function AboutTab({
             />
           </View>
           <Text style={styles.infoText}>{subscriberCount}</Text>
+        </View>
+
+        {/* Video Count */}
+        <View style={styles.infoRow}>
+          <View style={styles.iconContainer}>
+            <Image
+              source={require('@/assets/Icons/Discover.png')}
+              style={styles.icon}
+              resizeMode="contain"
+            />
+          </View>
+          <Text style={styles.infoText}>{program?.videoCount || 0} videos</Text>
         </View>
       </View>
     </View>
@@ -102,12 +117,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
-  },
-  linkText: {
-    fontSize: fs(14),
-    fontFamily: FONTS.medium,
-    color: '#0000FF',
-    flex: 1,
   },
   infoText: {
     fontSize: fs(14),

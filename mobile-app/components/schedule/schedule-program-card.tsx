@@ -1,6 +1,6 @@
 import { Button } from '@/components/button';
 import { styles } from '@/styles/schedule-program-card.styles';
-import { Image, Pressable, Text, View } from 'react-native';
+import { Image, ImageSourcePropType, Pressable, Text, View } from 'react-native';
 import { ScheduleBadge } from './schedule-badge';
 
 type ScheduleProgramCardProps = {
@@ -9,9 +9,9 @@ type ScheduleProgramCardProps = {
   category: string;
   title: string;
   description: string;
-  hostCount: number;
   watchingCount: string;
   isLive?: boolean;
+  thumbnailUrl?: string;
   onPress?: () => void;
   onWatchNowPress?: () => void;
 };
@@ -22,17 +22,27 @@ export function ScheduleProgramCard({
   category,
   title,
   description,
-  hostCount,
   watchingCount,
   isLive = false,
+  thumbnailUrl,
   onPress,
   onWatchNowPress,
 }: ScheduleProgramCardProps) {
+  const thumbnailSource: ImageSourcePropType = thumbnailUrl
+    ? { uri: thumbnailUrl }
+    : require('@/assets/images/Image-4.png');
   return (
     <Pressable 
       style={[styles.container, isLive && styles.containerLive]} 
       onPress={onPress}
     >
+      {/* Thumbnail */}
+      <Image
+        source={thumbnailSource}
+        style={styles.thumbnail}
+        resizeMode="cover"
+      />
+
       {/* Top Row: Time and Live Badge */}
       <View style={styles.topRow}>
         <View style={styles.timeSection}>
@@ -64,20 +74,11 @@ export function ScheduleProgramCard({
       <Text style={styles.title}>{title}</Text>
 
       {/* Description */}
-      <Text style={styles.description}>{description}</Text>
+      <Text style={styles.description} numberOfLines={2}>{description}</Text>
 
-      {/* Bottom Row: Host, Watching, Watch Now Button */}
+      {/* Bottom Row: Watching, Watch Now Button */}
       <View style={styles.bottomRow}>
         <View style={styles.infoSection}>
-          <View style={styles.infoItem}>
-            <Image
-              source={require('@/assets/Icons/persons.png')}
-              style={styles.infoIcon}
-              resizeMode="contain"
-            />
-            <Text style={styles.infoText}>Host: {hostCount}</Text>
-          </View>
-          
           <View style={styles.infoItem}>
             <Text style={styles.watchingText}>{watchingCount} watching</Text>
           </View>

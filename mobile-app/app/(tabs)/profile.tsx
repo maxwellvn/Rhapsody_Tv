@@ -5,12 +5,13 @@ import { ProfileSection } from '@/components/profile/profile-section';
 import { hp, spacing, wp } from '@/utils/responsive';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Image, ImageSourcePropType, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { userService } from '@/services/user.service';
 import { storage } from '@/utils/storage';
-import { ActivityIndicator } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
+import { useWatchHistory, useWatchlist, vodKeys } from '@/hooks/queries/useVodQueries';
 
 interface UserProfile {
   fullName: string;
@@ -20,8 +21,57 @@ interface UserProfile {
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  
+  // Fetch watch history from VOD API
+  const { data: historyData } = useWatchHistory(1, 10);
+  
+  // Fetch watchlist from VOD API
+  const { data: watchlistData } = useWatchlist(1, 10);
+
+  // Transform history data for ProfileSection
+  const historyItems = useMemo(() => {
+    if (!historyData?.items) return [];
+    return historyData.items.slice(0, 5).map((item) => ({
+      imageSource: item.video?.thumbnailUrl 
+        ? { uri: item.video.thumbnailUrl } as ImageSourcePropType
+        : require('@/assets/images/Image-4.png') as ImageSourcePropType,
+      title: item.video?.title || 'Untitled',
+      badgeLabel: undefined,
+      badgeColor: undefined,
+      showBadge: false,
+      onPress: () => item.videoId && router.push(`/video?id=${item.videoId}`),
+    }));
+  }, [historyData, router]);
+
+  // Transform watchlist data for ProfileSection
+  const watchlistItems = useMemo(() => {
+    if (!watchlistData?.items) return [];
+    return watchlistData.items.slice(0, 5).map((item) => ({
+      imageSource: item.video?.thumbnailUrl 
+        ? { uri: item.video.thumbnailUrl } as ImageSourcePropType
+        : require('@/assets/images/Image-4.png') as ImageSourcePropType,
+      title: item.video?.title || 'Untitled',
+      badgeLabel: undefined,
+      badgeColor: undefined,
+      showBadge: false,
+      onPress: () => item.videoId && router.push(`/video?id=${item.videoId}`),
+    }));
+  }, [watchlistData, router]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    // Refresh profile data, history, and watchlist
+    await Promise.all([
+      loadProfile(),
+      queryClient.invalidateQueries({ queryKey: vodKeys.history() }),
+      queryClient.invalidateQueries({ queryKey: vodKeys.watchlist() }),
+    ]);
+    setRefreshing(false);
+  }, [queryClient]);
 
   useEffect(() => {
     loadProfile();
@@ -109,6 +159,14 @@ export default function ProfileScreen() {
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#2563EB"
+            colors={['#2563EB']}
+          />
+        }
       >
         {loading ? (
           <View style={styles.loadingContainer}>
@@ -124,68 +182,22 @@ export default function ProfileScreen() {
         )}
 
         {/* History Section */}
-        <ProfileSection
-          title="History"
-          onSeeAllPress={() => console.log('View all history')}
-          items={[
-            {
-              imageSource: require('@/assets/images/Image-4.png'),
-              title: 'Rhapsody Dailies',
-              badgeLabel: 'Series',
-              badgeColor: '#2563EB',
-              showBadge: true,
-              onPress: () => router.push('/program-profile'),
-            },
-            {
-              imageSource: require('@/assets/images/Image-1.png'),
-              title: 'Rhapsody On The Daily Frontier',
-              badgeLabel: 'New',
-              badgeColor: '#2563EB',
-              showBadge: true,
-              onPress: () => router.push('/program-profile'),
-            },
-            {
-              imageSource: require('@/assets/images/Image-5.png'),
-              title: 'The Day God Spoke My Language',
-              badgeLabel: 'Live',
-              badgeColor: '#DC2626',
-              showBadge: true,
-              onPress: () => router.push('/program-profile'),
-            },
-          ]}
-        />
+        {historyItems.length > 0 && (
+          <ProfileSection
+            title="History"
+            onSeeAllPress={() => router.push('/history')}
+            items={historyItems}
+          />
+        )}
 
         {/* Watchlist Section */}
-        <ProfileSection
-          title="Watchlist"
-          onSeeAllPress={() => console.log('View all watchlist')}
-          items={[
-            {
-              imageSource: require('@/assets/images/Image-4.png'),
-              title: 'Rhapsody Dailies',
-              badgeLabel: 'Series',
-              badgeColor: '#2563EB',
-              showBadge: true,
-              onPress: () => router.push('/program-profile'),
-            },
-            {
-              imageSource: require('@/assets/images/Image-1.png'),
-              title: 'Rhapsody On The Daily Frontier',
-              badgeLabel: 'New',
-              badgeColor: '#2563EB',
-              showBadge: true,
-              onPress: () => router.push('/program-profile'),
-            },
-            {
-              imageSource: require('@/assets/images/Image-5.png'),
-              title: 'The Day God Spoke My Language',
-              badgeLabel: 'Live',
-              badgeColor: '#DC2626',
-              showBadge: true,
-              onPress: () => router.push('/program-profile'),
-            },
-          ]}
-        />
+        {watchlistItems.length > 0 && (
+          <ProfileSection
+            title="Watchlist"
+            onSeeAllPress={() => router.push('/watchlist')}
+            items={watchlistItems}
+          />
+        )}
 
         {/* Downloaded Videos */}
         <DownloadedVideosItem onPress={handleDownloadedVideos} />

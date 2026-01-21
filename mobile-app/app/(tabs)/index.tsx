@@ -3,16 +3,29 @@ import { ChannelsListSection } from '@/components/home/channels-list-section';
 import { ContinueWatchingSection } from '@/components/home/continue-watching-section';
 import { FeaturedVideosSection } from '@/components/home/featured-videos-section';
 import { LiveNowSection } from '@/components/home/live-now-section';
+import { LivestreamsSection } from '@/components/home/livestreams-section';
 import { ProgramHighlightsSection } from '@/components/home/program-highlights-section';
 import { ProgramsSection } from '@/components/home/programs-section';
 import { SearchBar } from '@/components/search-bar';
+import { homepageKeys } from '@/hooks/queries/useHomepageQueries';
 import { styles } from '@/styles/home.styles';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Image, Pressable, ScrollView, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { Image, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 
 export default function HomeScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    // Invalidate all homepage queries to trigger refetch
+    await queryClient.invalidateQueries({ queryKey: homepageKeys.all });
+    setRefreshing(false);
+  }, [queryClient]);
 
   const handleNotificationPress = () => {
     router.push('/notifications');
@@ -67,8 +80,17 @@ export default function HomeScreen() {
         style={styles.content} 
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#2563EB"
+            colors={['#2563EB']}
+          />
+        }
       >
         <LiveNowSection />
+        <LivestreamsSection />
         <ContinueWatchingSection />
         <ChannelsListSection />
         <ProgramsSection />

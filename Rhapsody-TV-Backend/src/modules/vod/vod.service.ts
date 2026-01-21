@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -16,6 +17,8 @@ import {
   CommentLike,
   CommentLikeDocument,
 } from './schemas/comment-like.schema';
+import { Watchlist, WatchlistDocument } from './schemas/watchlist.schema';
+import { WatchHistory, WatchHistoryDocument } from './schemas/watch-history.schema';
 import { CreateCommentDto } from './dto';
 
 @Injectable()
@@ -31,23 +34,33 @@ export class VodService {
     private readonly commentLikeModel: Model<CommentLikeDocument>,
     @InjectModel(Channel.name)
     private readonly channelModel: Model<ChannelDocument>,
+    @InjectModel(Watchlist.name)
+    private readonly watchlistModel: Model<WatchlistDocument>,
+    @InjectModel(WatchHistory.name)
+    private readonly watchHistoryModel: Model<WatchHistoryDocument>,
   ) {}
 
   /**
    * Get all public videos with pagination
    */
-  async getVideos(page = 1, limit = 20) {
+  async getVideos(page = 1, limit = 20, programId?: string) {
     const skip = (page - 1) * limit;
+    const filter: Record<string, any> = { isActive: true, visibility: 'public' };
+    
+    if (programId) {
+      filter.programId = new Types.ObjectId(programId);
+    }
 
     const [videos, total] = await Promise.all([
       this.videoModel
-        .find({ isActive: true, visibility: 'public' })
+        .find(filter)
         .sort({ publishedAt: -1, createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .populate('channelId', 'name logoUrl')
+        .populate('programId', 'title')
         .exec(),
-      this.videoModel.countDocuments({ isActive: true, visibility: 'public' }),
+      this.videoModel.countDocuments(filter),
     ]);
 
     return {
@@ -57,6 +70,16 @@ export class VodService {
       limit,
       totalPages: Math.ceil(total / limit),
     };
+  }
+
+  /**
+   * Get videos by program ID
+   */
+  async getVideosByProgram(programId: string, page = 1, limit = 20) {
+    if (!Types.ObjectId.isValid(programId)) {
+      throw new BadRequestException('Invalid program ID');
+    }
+    return this.getVideos(page, limit, programId);
   }
 
   /**
@@ -385,9 +408,11 @@ export class VodService {
    */
   private formatVideoResponse(video: VideoDocument) {
     const channelData = video.channelId as unknown as ChannelDocument;
+    const programData = video.programId as unknown as { _id: Types.ObjectId; title: string } | undefined;
     return {
       id: video._id.toString(),
       channelId: channelData?._id?.toString() || video.channelId.toString(),
+      programId: programData?._id?.toString() || video.programId?.toString(),
       title: video.title,
       description: video.description,
       playbackUrl: video.playbackUrl,
@@ -405,6 +430,12 @@ export class VodService {
             id: channelData._id?.toString(),
             name: channelData.name,
             logoUrl: channelData.logoUrl,
+          }
+        : undefined,
+      program: programData
+        ? {
+            id: programData._id?.toString(),
+            title: programData.title,
           }
         : undefined,
     };
@@ -431,5 +462,222 @@ export class VodService {
       createdAt: (comment as VideoCommentDocument & { createdAt?: Date })
         .createdAt,
     };
+  }
+
+  // ============== WATCHLIST METHODS ==============
+
+  /**
+   * Add video to watchlist
+   */
+  async addToWatchlist(userId: string, videoId: string) {
+    if (!Types.ObjectId.isValid(videoId)) {
+      throw new BadRequestException('Invalid video ID');
+    }
+
+    const video = await this.videoModel.findById(videoId);
+    if (!video || !video.isActive) {
+      throw new NotFoundException('Video not found');
+    }
+
+    const existing = await this.watchlistModel.findOne({
+      userId: new Types.ObjectId(userId),
+      videoId: new Types.ObjectId(videoId),
+    });
+
+    if (existing) {
+      throw new ConflictException('Video already in watchlist');
+    }
+
+    await this.watchlistModel.create({
+      userId: new Types.ObjectId(userId),
+      videoId: new Types.ObjectId(videoId),
+    });
+
+    return { message: 'Video added to watchlist' };
+  }
+
+  /**
+   * Remove video from watchlist
+   */
+  async removeFromWatchlist(userId: string, videoId: string) {
+    if (!Types.ObjectId.isValid(videoId)) {
+      throw new BadRequestException('Invalid video ID');
+    }
+
+    const result = await this.watchlistModel.findOneAndDelete({
+      userId: new Types.ObjectId(userId),
+      videoId: new Types.ObjectId(videoId),
+    });
+
+    if (!result) {
+      throw new NotFoundException('Video not in watchlist');
+    }
+
+    return { message: 'Video removed from watchlist' };
+  }
+
+  /**
+   * Get user's watchlist
+   */
+  async getWatchlist(userId: string, page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+
+    const [watchlistItems, total] = await Promise.all([
+      this.watchlistModel
+        .find({ userId: new Types.ObjectId(userId) })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate({
+          path: 'videoId',
+          populate: { path: 'channelId', select: 'name logoUrl' },
+        }),
+      this.watchlistModel.countDocuments({ userId: new Types.ObjectId(userId) }),
+    ]);
+
+    const items = watchlistItems
+      .filter((item) => item.videoId)
+      .map((item) => {
+        const video = item.videoId as unknown as VideoDocument;
+        return {
+          id: item._id.toString(),
+          videoId: video._id.toString(),
+          video: this.formatVideoResponse(video),
+          addedAt: (item as any).createdAt,
+        };
+      });
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  /**
+   * Check if video is in watchlist
+   */
+  async isInWatchlist(userId: string, videoId: string) {
+    if (!Types.ObjectId.isValid(videoId)) {
+      return { inWatchlist: false };
+    }
+
+    const item = await this.watchlistModel.findOne({
+      userId: new Types.ObjectId(userId),
+      videoId: new Types.ObjectId(videoId),
+    });
+
+    return { inWatchlist: !!item };
+  }
+
+  // ============== WATCH HISTORY METHODS ==============
+
+  /**
+   * Add or update watch history entry
+   */
+  async updateWatchHistory(
+    userId: string,
+    videoId: string,
+    watchedSeconds: number,
+    totalDurationSeconds: number,
+  ) {
+    if (!Types.ObjectId.isValid(videoId)) {
+      throw new BadRequestException('Invalid video ID');
+    }
+
+    const completed = totalDurationSeconds > 0 && 
+      watchedSeconds >= totalDurationSeconds * 0.9; // 90% watched = completed
+
+    await this.watchHistoryModel.findOneAndUpdate(
+      {
+        userId: new Types.ObjectId(userId),
+        videoId: new Types.ObjectId(videoId),
+      },
+      {
+        watchedSeconds,
+        totalDurationSeconds,
+        lastWatchedAt: new Date(),
+        completed,
+      },
+      { upsert: true, new: true },
+    );
+
+    return { message: 'Watch history updated' };
+  }
+
+  /**
+   * Get user's watch history
+   */
+  async getWatchHistory(userId: string, page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+
+    const [historyItems, total] = await Promise.all([
+      this.watchHistoryModel
+        .find({ userId: new Types.ObjectId(userId) })
+        .sort({ lastWatchedAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate({
+          path: 'videoId',
+          populate: { path: 'channelId', select: 'name logoUrl' },
+        }),
+      this.watchHistoryModel.countDocuments({ userId: new Types.ObjectId(userId) }),
+    ]);
+
+    const items = historyItems
+      .filter((item) => item.videoId)
+      .map((item) => {
+        const video = item.videoId as unknown as VideoDocument;
+        return {
+          id: item._id.toString(),
+          videoId: video._id.toString(),
+          video: this.formatVideoResponse(video),
+          watchedSeconds: item.watchedSeconds,
+          totalDurationSeconds: item.totalDurationSeconds,
+          lastWatchedAt: item.lastWatchedAt,
+          completed: item.completed,
+        };
+      });
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  /**
+   * Clear watch history
+   */
+  async clearWatchHistory(userId: string) {
+    await this.watchHistoryModel.deleteMany({
+      userId: new Types.ObjectId(userId),
+    });
+
+    return { message: 'Watch history cleared' };
+  }
+
+  /**
+   * Remove single item from watch history
+   */
+  async removeFromWatchHistory(userId: string, videoId: string) {
+    if (!Types.ObjectId.isValid(videoId)) {
+      throw new BadRequestException('Invalid video ID');
+    }
+
+    const result = await this.watchHistoryModel.findOneAndDelete({
+      userId: new Types.ObjectId(userId),
+      videoId: new Types.ObjectId(videoId),
+    });
+
+    if (!result) {
+      throw new NotFoundException('Video not in watch history');
+    }
+
+    return { message: 'Video removed from watch history' };
   }
 }

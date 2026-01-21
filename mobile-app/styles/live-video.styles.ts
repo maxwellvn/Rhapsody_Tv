@@ -70,11 +70,17 @@ export const styles = StyleSheet.create({
     paddingVertical: dimensions.isTablet ? spacing.sm : spacing.xs,
     borderRadius: dimensions.isTablet ? 12 : 10,
   },
+  subscribedButton: {
+    backgroundColor: '#F2F2F2',
+  },
   subscribeButtonText: {
     fontSize: dimensions.isTablet ? fs(16) : fs(14),
     fontWeight: '600',
     color: '#FFFFFF',
     fontFamily: FONTS.semibold,
+  },
+  subscribedButtonText: {
+    color: '#0F0F0F',
   },
   actionButton: {
     flexDirection: 'row',

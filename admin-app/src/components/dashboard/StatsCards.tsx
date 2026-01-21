@@ -16,31 +16,36 @@ const defaultStats: StatCard[] = [
     label: 'Total Users',
     value: '-',
     icon: Users,
-    subtitle: 'Coming soon',
+    subtitle: 'Loading...',
   },
   {
     label: 'Total Channels',
     value: '-',
     icon: Radio,
-    subtitle: 'Coming soon',
+    subtitle: 'Loading...',
   },
   {
     label: 'Total Videos',
     value: '-',
     icon: Video,
-    subtitle: 'Coming soon',
+    subtitle: 'Loading...',
   },
   {
     label: 'Live Streams',
     value: '-',
     icon: Tv,
-    subtitle: 'Coming soon',
+    subtitle: 'Loading...',
   },
 ];
 
 const StatsCards = ({ stats = defaultStats }: StatsCardsProps) => {
+  // Determine grid columns based on number of stats
+  const gridCols = stats.length === 5 
+    ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5' 
+    : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4';
+
   return (
-    <div className="mt-8 md:mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+    <div className={`grid ${gridCols} gap-4 md:gap-6`}>
       {stats.map((stat, index) => {
         const Icon = stat.icon;
         return (

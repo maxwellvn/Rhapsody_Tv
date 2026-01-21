@@ -18,11 +18,12 @@ type ChatMessage = {
 };
 
 type LiveChatModalProps = {
+  livestreamId?: string;
   onClose: () => void;
   viewerCount: string;
 };
 
-export function LiveChatModal({ onClose, viewerCount }: LiveChatModalProps) {
+export function LiveChatModal({ livestreamId, onClose, viewerCount }: LiveChatModalProps) {
   const [message, setMessage] = useState('');
 
   // Sample chat messages

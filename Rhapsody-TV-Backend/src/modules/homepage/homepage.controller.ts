@@ -15,6 +15,7 @@ import {
   HomepageProgramDto,
   HomepageVideoDto,
   HomepageContinueWatchingDto,
+  HomepageLivestreamDto,
   UpdateProgressDto,
 } from './dto';
 
@@ -131,6 +132,24 @@ export class HomepageController {
     return {
       success: true,
       message: 'Program highlights retrieved successfully',
+      data,
+    };
+  }
+
+  @Public()
+  @Get('livestreams')
+  @ApiOperation({ summary: 'Get active livestreams' })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiOkSuccessResponse({
+    description: 'Livestreams retrieved successfully',
+    model: HomepageLivestreamDto,
+    isArray: true,
+  })
+  async getLivestreams(@Query() query: GetHomepageQueryDto) {
+    const data = await this.homepageService.getLivestreams(query.limit);
+    return {
+      success: true,
+      message: 'Livestreams retrieved successfully',
       data,
     };
   }

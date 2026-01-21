@@ -66,6 +66,7 @@ export const platformValue = <T,>(ios: T, android: T, web?: T): T => {
  * Responsive spacing
  */
 export const spacing = {
+  xxs: wp(4),
   xs: wp(6),
   sm: wp(10),
   md: wp(14),

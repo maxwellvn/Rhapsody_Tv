@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, Calendar, Clock, Repeat } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -12,10 +12,11 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { programService } from '@/services/api/program.service';
-import { CreateProgramRequest } from '@/types/api.types';
+import { CreateProgramRequest, ScheduleType, DAYS_OF_WEEK } from '@/types/api.types';
 import { useQueryClient } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 import { channelService } from '@/services/api/channel.service';
@@ -24,18 +25,71 @@ const programSchema = z.object({
   channelId: z.string().min(1, 'Channel is required'),
   title: z.string().min(1, 'Title is required').min(3, 'Title must be at least 3 characters'),
   description: z.string().optional(),
-  startTime: z.string().min(1, 'Start time is required'),
-  endTime: z.string().min(1, 'End time is required'),
+  scheduleType: z.enum(['daily', 'weekly', 'once']),
+  // For daily/weekly
+  startTimeOfDay: z.string().optional(),
+  endTimeOfDay: z.string().optional(),
+  // For weekly
+  daysOfWeek: z.array(z.number()).optional(),
+  // For once (and optional for daily/weekly as effective date range)
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
+  timezone: z.string().optional(),
   category: z.string().optional(),
-}).refine(
-  (data) => {
-    if (data.startTime && data.endTime) {
-      return new Date(data.endTime) > new Date(data.startTime);
+  thumbnailUrl: z.string().optional(),
+}).superRefine((data, ctx) => {
+  // Validate based on schedule type
+  if (data.scheduleType === 'daily' || data.scheduleType === 'weekly') {
+    if (!data.startTimeOfDay) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Start time is required for daily/weekly schedules',
+        path: ['startTimeOfDay'],
+      });
     }
-    return true;
-  },
-  { message: 'End time must be after start time', path: ['endTime'] }
-);
+    if (!data.endTimeOfDay) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'End time is required for daily/weekly schedules',
+        path: ['endTimeOfDay'],
+      });
+    }
+  }
+
+  if (data.scheduleType === 'weekly') {
+    if (!data.daysOfWeek || data.daysOfWeek.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Select at least one day for weekly schedules',
+        path: ['daysOfWeek'],
+      });
+    }
+  }
+
+  if (data.scheduleType === 'once') {
+    if (!data.startTime) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Start date/time is required for special programs',
+        path: ['startTime'],
+      });
+    }
+    if (!data.endTime) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'End date/time is required for special programs',
+        path: ['endTime'],
+      });
+    }
+    if (data.startTime && data.endTime && new Date(data.endTime) <= new Date(data.startTime)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'End time must be after start time',
+        path: ['endTime'],
+      });
+    }
+  }
+});
 
 type ProgramFormValues = z.infer<typeof programSchema>;
 
@@ -63,27 +117,59 @@ const CreateProgramForm = ({ onSuccess }: CreateProgramFormProps) => {
       channelId: '',
       title: '',
       description: '',
+      scheduleType: 'daily',
+      startTimeOfDay: '',
+      endTimeOfDay: '',
+      daysOfWeek: [],
       startTime: '',
       endTime: '',
+      timezone: 'UTC',
       category: '',
+      thumbnailUrl: '',
     },
+  });
+
+  // Watch schedule type to show/hide fields
+  const scheduleType = useWatch({
+    control: form.control,
+    name: 'scheduleType',
   });
 
   const onSubmit = async (data: ProgramFormValues) => {
     setIsSubmitting(true);
     try {
-      // Convert datetime-local to ISO 8601
-      const startTimeISO = data.startTime ? new Date(data.startTime).toISOString() : '';
-      const endTimeISO = data.endTime ? new Date(data.endTime).toISOString() : '';
-      
       const payload: CreateProgramRequest = {
         channelId: data.channelId,
         title: data.title,
         description: data.description?.trim() || undefined,
-        startTime: startTimeISO,
-        endTime: endTimeISO,
+        scheduleType: data.scheduleType as ScheduleType,
         category: data.category?.trim() || undefined,
+        timezone: data.timezone || 'UTC',
+        thumbnailUrl: data.thumbnailUrl?.trim() || undefined,
       };
+
+      // Add fields based on schedule type
+      if (data.scheduleType === 'daily' || data.scheduleType === 'weekly') {
+        payload.startTimeOfDay = data.startTimeOfDay;
+        payload.endTimeOfDay = data.endTimeOfDay;
+        
+        // Optional effective date range
+        if (data.startTime) {
+          payload.startTime = new Date(data.startTime).toISOString();
+        }
+        if (data.endTime) {
+          payload.endTime = new Date(data.endTime).toISOString();
+        }
+      }
+
+      if (data.scheduleType === 'weekly') {
+        payload.daysOfWeek = data.daysOfWeek;
+      }
+
+      if (data.scheduleType === 'once') {
+        payload.startTime = new Date(data.startTime!).toISOString();
+        payload.endTime = new Date(data.endTime!).toISOString();
+      }
 
       const response = await programService.createProgram(payload);
       
@@ -99,6 +185,15 @@ const CreateProgramForm = ({ onSuccess }: CreateProgramFormProps) => {
       toast.error(error.message || 'Failed to create program. Please try again.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const toggleDayOfWeek = (day: number) => {
+    const current = form.getValues('daysOfWeek') || [];
+    if (current.includes(day)) {
+      form.setValue('daysOfWeek', current.filter(d => d !== day));
+    } else {
+      form.setValue('daysOfWeek', [...current, day].sort());
     }
   };
 
@@ -139,6 +234,7 @@ const CreateProgramForm = ({ onSuccess }: CreateProgramFormProps) => {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          {/* Channel Selection */}
           <FormField
             control={form.control}
             name="channelId"
@@ -163,6 +259,7 @@ const CreateProgramForm = ({ onSuccess }: CreateProgramFormProps) => {
             )}
           />
 
+          {/* Title */}
           <FormField
             control={form.control}
             name="title"
@@ -181,6 +278,7 @@ const CreateProgramForm = ({ onSuccess }: CreateProgramFormProps) => {
             )}
           />
 
+          {/* Description */}
           <FormField
             control={form.control}
             name="description"
@@ -200,17 +298,246 @@ const CreateProgramForm = ({ onSuccess }: CreateProgramFormProps) => {
             )}
           />
 
+          {/* Schedule Type Selection */}
+          <FormField
+            control={form.control}
+            name="scheduleType"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-black">Schedule Type *</FormLabel>
+                <FormControl>
+                  <div className="grid grid-cols-3 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => field.onChange('daily')}
+                      className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all ${
+                        field.value === 'daily'
+                          ? 'border-[#0000FF] bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <Repeat className={`w-6 h-6 mb-2 ${field.value === 'daily' ? 'text-[#0000FF]' : 'text-gray-500'}`} />
+                      <span className={`text-sm font-medium ${field.value === 'daily' ? 'text-[#0000FF]' : 'text-gray-700'}`}>
+                        Daily
+                      </span>
+                      <span className="text-xs text-gray-500 mt-1">Every day</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => field.onChange('weekly')}
+                      className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all ${
+                        field.value === 'weekly'
+                          ? 'border-[#0000FF] bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <Calendar className={`w-6 h-6 mb-2 ${field.value === 'weekly' ? 'text-[#0000FF]' : 'text-gray-500'}`} />
+                      <span className={`text-sm font-medium ${field.value === 'weekly' ? 'text-[#0000FF]' : 'text-gray-700'}`}>
+                        Weekly
+                      </span>
+                      <span className="text-xs text-gray-500 mt-1">Specific days</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => field.onChange('once')}
+                      className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all ${
+                        field.value === 'once'
+                          ? 'border-[#0000FF] bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <Clock className={`w-6 h-6 mb-2 ${field.value === 'once' ? 'text-[#0000FF]' : 'text-gray-500'}`} />
+                      <span className={`text-sm font-medium ${field.value === 'once' ? 'text-[#0000FF]' : 'text-gray-700'}`}>
+                        Special
+                      </span>
+                      <span className="text-xs text-gray-500 mt-1">One-time event</span>
+                    </button>
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Time of Day (for daily/weekly) */}
+          {(scheduleType === 'daily' || scheduleType === 'weekly') && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="startTimeOfDay"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-black">Start Time *</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="time"
+                        className="bg-white border-gray-300"
+                      />
+                    </FormControl>
+                    <FormDescription>Time the program starts each day</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="endTimeOfDay"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-black">End Time *</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="time"
+                        className="bg-white border-gray-300"
+                      />
+                    </FormControl>
+                    <FormDescription>Time the program ends each day</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          )}
+
+          {/* Days of Week (for weekly) */}
+          {scheduleType === 'weekly' && (
+            <FormField
+              control={form.control}
+              name="daysOfWeek"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-black">Days of Week *</FormLabel>
+                  <FormControl>
+                    <div className="flex flex-wrap gap-2">
+                      {DAYS_OF_WEEK.map((day) => (
+                        <button
+                          key={day.value}
+                          type="button"
+                          onClick={() => toggleDayOfWeek(day.value)}
+                          className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                            field.value?.includes(day.value)
+                              ? 'bg-[#0000FF] text-white'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          {day.label.slice(0, 3)}
+                        </button>
+                      ))}
+                    </div>
+                  </FormControl>
+                  <FormDescription>Select which days this program airs</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
+          {/* Specific Date/Time (for once) */}
+          {scheduleType === 'once' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="startTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-black">Start Date & Time *</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="datetime-local"
+                        className="bg-white border-gray-300"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="endTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-black">End Date & Time *</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="datetime-local"
+                        className="bg-white border-gray-300"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          )}
+
+          {/* Optional: Effective Date Range for recurring schedules */}
+          {(scheduleType === 'daily' || scheduleType === 'weekly') && (
+            <div className="border-t pt-4 mt-4">
+              <h3 className="text-sm font-medium text-gray-700 mb-3">
+                Effective Date Range (Optional)
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="startTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-black">Starts From</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="date"
+                          className="bg-white border-gray-300"
+                        />
+                      </FormControl>
+                      <FormDescription>Leave empty to start immediately</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="endTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-black">Ends On</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="date"
+                          className="bg-white border-gray-300"
+                        />
+                      </FormControl>
+                      <FormDescription>Leave empty for indefinite</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Category and Timezone */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={form.control}
-              name="startTime"
+              name="category"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-black">Start Time *</FormLabel>
+                  <FormLabel className="text-black">Category</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
-                      type="datetime-local"
+                      placeholder="e.g., News, Sports, Entertainment"
                       className="bg-white border-gray-300"
                     />
                   </FormControl>
@@ -221,16 +548,25 @@ const CreateProgramForm = ({ onSuccess }: CreateProgramFormProps) => {
 
             <FormField
               control={form.control}
-              name="endTime"
+              name="timezone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-black">End Time *</FormLabel>
+                  <FormLabel className="text-black">Timezone</FormLabel>
                   <FormControl>
-                    <Input
+                    <select
                       {...field}
-                      type="datetime-local"
-                      className="bg-white border-gray-300"
-                    />
+                      className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="UTC">UTC</option>
+                      <option value="America/New_York">Eastern Time (ET)</option>
+                      <option value="America/Chicago">Central Time (CT)</option>
+                      <option value="America/Denver">Mountain Time (MT)</option>
+                      <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                      <option value="Europe/London">London (GMT)</option>
+                      <option value="Europe/Paris">Paris (CET)</option>
+                      <option value="Asia/Tokyo">Tokyo (JST)</option>
+                      <option value="Africa/Lagos">Lagos (WAT)</option>
+                    </select>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -238,16 +574,17 @@ const CreateProgramForm = ({ onSuccess }: CreateProgramFormProps) => {
             />
           </div>
 
+          {/* Thumbnail URL */}
           <FormField
             control={form.control}
-            name="category"
+            name="thumbnailUrl"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-black">Category</FormLabel>
+                <FormLabel className="text-black">Thumbnail URL</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
-                    placeholder="e.g., News, Sports, Entertainment"
+                    placeholder="https://example.com/thumbnail.jpg"
                     className="bg-white border-gray-300"
                   />
                 </FormControl>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
@@ -15,16 +15,24 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { livestreamService } from '@/services/api/livestream.service';
-import { UpdateLivestreamRequest, Livestream } from '@/types/api.types';
+import { UpdateLivestreamRequest, Livestream, LivestreamScheduleType } from '@/types/api.types';
 import { useQueryClient } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 import { channelService } from '@/services/api/channel.service';
+import { programService } from '@/services/api/program.service';
 
 const livestreamSchema = z.object({
+  programId: z.string().optional(),
   title: z.string().min(1, 'Title is required').min(3, 'Title must be at least 3 characters'),
   description: z.string().optional(),
+  scheduleType: z.enum(['continuous', 'scheduled']).default('continuous'),
   scheduledStartAt: z.string().optional(),
+  scheduledEndAt: z.string().optional(),
   thumbnailUrl: z.union([
+    z.string().url('Must be a valid URL'),
+    z.literal(''),
+  ]).optional(),
+  playbackUrl: z.union([
     z.string().url('Must be a valid URL'),
     z.literal(''),
   ]).optional(),
@@ -52,6 +60,15 @@ const EditLivestreamForm = ({ livestream, onSuccess, onCancel }: EditLivestreamF
     },
   });
 
+  // Fetch programs for dropdown
+  const { data: programsData } = useQuery({
+    queryKey: ['programs', 1, 100],
+    queryFn: async () => {
+      const response = await programService.getPrograms({ page: 1, limit: 100 });
+      return response.data;
+    },
+  });
+
   // Convert ISO dates to datetime-local format
   const formatDateForInput = (isoDate?: string) => {
     if (!isoDate) return '';
@@ -64,30 +81,55 @@ const EditLivestreamForm = ({ livestream, onSuccess, onCancel }: EditLivestreamF
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
+  // Get the programId value (handle populated object)
+  const getProgramId = () => {
+    if (!livestream.programId) return '';
+    return typeof livestream.programId === 'object' 
+      ? livestream.programId._id 
+      : livestream.programId;
+  };
+
   const form = useForm<LivestreamFormValues>({
     resolver: zodResolver(livestreamSchema),
     defaultValues: {
+      programId: getProgramId(),
       title: livestream.title,
       description: livestream.description || '',
+      scheduleType: livestream.scheduleType || 'continuous',
       scheduledStartAt: formatDateForInput(livestream.scheduledStartAt),
+      scheduledEndAt: formatDateForInput(livestream.scheduledEndAt),
       thumbnailUrl: livestream.thumbnailUrl || '',
+      playbackUrl: livestream.playbackUrl || '',
       isChatEnabled: livestream.isChatEnabled,
     },
+  });
+
+  // Watch the scheduleType to conditionally show time fields
+  const scheduleType = useWatch({
+    control: form.control,
+    name: 'scheduleType',
   });
 
   const onSubmit = async (data: LivestreamFormValues) => {
     setIsSubmitting(true);
     try {
-      // Convert datetime-local to ISO 8601
-      const scheduledStartAtISO = data.scheduledStartAt 
+      // Convert datetime-local to ISO 8601 (only for scheduled type)
+      const scheduledStartAtISO = data.scheduleType === 'scheduled' && data.scheduledStartAt 
         ? new Date(data.scheduledStartAt).toISOString() 
+        : undefined;
+      const scheduledEndAtISO = data.scheduleType === 'scheduled' && data.scheduledEndAt 
+        ? new Date(data.scheduledEndAt).toISOString() 
         : undefined;
       
       const payload: UpdateLivestreamRequest = {
+        programId: data.programId?.trim() || undefined,
         title: data.title,
         description: data.description?.trim() || undefined,
+        scheduleType: data.scheduleType as LivestreamScheduleType,
         scheduledStartAt: scheduledStartAtISO,
+        scheduledEndAt: scheduledEndAtISO,
         thumbnailUrl: data.thumbnailUrl?.trim() || undefined,
+        playbackUrl: data.playbackUrl?.trim() || undefined,
         isChatEnabled: data.isChatEnabled,
       };
 
@@ -136,11 +178,39 @@ const EditLivestreamForm = ({ livestream, onSuccess, onCancel }: EditLivestreamF
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600 mb-2">Channel (cannot be changed)</p>
-            <p className="text-base font-medium text-black">
-              {channelsData?.channels.find(c => c.id === livestream.channelId)?.name || livestream.channelId}
-            </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-600 mb-2">Channel (cannot be changed)</p>
+              <p className="text-base font-medium text-black">
+                {typeof livestream.channelId === 'object' 
+                  ? livestream.channelId.name 
+                  : channelsData?.channels.find(c => c.id === livestream.channelId)?.name || livestream.channelId}
+              </p>
+            </div>
+
+            <FormField
+              control={form.control}
+              name="programId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-black">Program (optional)</FormLabel>
+                  <FormControl>
+                    <select
+                      {...field}
+                      className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="">No program</option>
+                      {programsData?.programs.map((program) => (
+                        <option key={program.id} value={program.id}>
+                          {program.title}
+                        </option>
+                      ))}
+                    </select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
 
           <FormField
@@ -180,44 +250,126 @@ const EditLivestreamForm = ({ livestream, onSuccess, onCancel }: EditLivestreamF
             )}
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="scheduledStartAt"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-black">Scheduled Start Time</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      type="datetime-local"
-                      className="bg-white border-gray-300"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <FormField
+            control={form.control}
+            name="playbackUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-black">Playback URL (m3u8)</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    type="url"
+                    placeholder="https://example.com/live/stream.m3u8"
+                    className="bg-white border-gray-300"
+                  />
+                </FormControl>
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter the HLS stream URL (m3u8 format) for the livestream
+                </p>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-            <FormField
-              control={form.control}
-              name="thumbnailUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-black">Thumbnail URL</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      type="url"
-                      placeholder="https://example.com/thumbnail.jpg"
-                      className="bg-white border-gray-300"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+          <FormField
+            control={form.control}
+            name="scheduleType"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-black">Schedule Type *</FormLabel>
+                <FormControl>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        value="continuous"
+                        checked={field.value === 'continuous'}
+                        onChange={() => field.onChange('continuous')}
+                        className="h-4 w-4 text-[#0000FF] focus:ring-[#0000FF]"
+                      />
+                      <span className="text-sm">24/7 Continuous</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        value="scheduled"
+                        checked={field.value === 'scheduled'}
+                        onChange={() => field.onChange('scheduled')}
+                        className="h-4 w-4 text-[#0000FF] focus:ring-[#0000FF]"
+                      />
+                      <span className="text-sm">Scheduled</span>
+                    </label>
+                  </div>
+                </FormControl>
+                <p className="text-xs text-gray-500 mt-1">
+                  {field.value === 'continuous' 
+                    ? 'Stream runs continuously without a set schedule' 
+                    : 'Stream has specific start and end times'}
+                </p>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {scheduleType === 'scheduled' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <FormField
+                control={form.control}
+                name="scheduledStartAt"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-black">Start Time</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="datetime-local"
+                        className="bg-white border-gray-300"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="scheduledEndAt"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-black">End Time</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="datetime-local"
+                        className="bg-white border-gray-300"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          )}
+
+          <FormField
+            control={form.control}
+            name="thumbnailUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-black">Thumbnail URL</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    type="url"
+                    placeholder="https://example.com/thumbnail.jpg"
+                    className="bg-white border-gray-300"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           <FormField
             control={form.control}

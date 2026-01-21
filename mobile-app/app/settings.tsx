@@ -1,6 +1,7 @@
 import { SettingsItem } from '@/components/settings/settings-item';
 import { SettingsSection } from '@/components/settings/settings-section';
 import { SettingsTitle } from '@/components/settings/settings-title';
+import { useLogout } from '@/hooks/queries/useAuthQueries';
 import { FONTS } from '@/styles/global';
 import { fs, hp, spacing, wp } from '@/utils/responsive';
 import { router, Stack } from 'expo-router';
@@ -8,6 +9,7 @@ import { Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SettingsScreen() {
+  const { mutate: handleSignOut, isPending: isSigningOut } = useLogout();
   const handleBack = () => {
     router.back();
   };
@@ -42,10 +44,6 @@ export default function SettingsScreen() {
 
   const handleAbout = () => {
     console.log('About pressed');
-  };
-
-  const handleSignOut = () => {
-    console.log('Sign out pressed');
   };
 
   return (

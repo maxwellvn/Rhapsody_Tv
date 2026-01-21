@@ -1,65 +1,122 @@
 /* eslint-disable import/no-unresolved */
+import { useQuery } from '@tanstack/react-query';
+import { Radio, Tv, Users, Video, Calendar } from 'lucide-react';
 import ChannelsChart from '@/components/dashboard/ChannelsChart';
 import MenuGrid from '@/components/dashboard/MenuGrid';
 import StatsCards from '@/components/dashboard/StatsCards';
-import UserGrowthChart from '@/components/dashboard/UserGrowthChart';
-import VideoViewsChart from '@/components/dashboard/VideoViewsChart';
 import WelcomeSection from '@/components/dashboard/WelcomeSection';
-import DashboardHeader from '@/components/layout/DashboardHeader';
+import MainLayout from '@/components/layout/MainLayout';
+import { userService } from '@/services/api/user.service';
+import { channelService } from '@/services/api/channel.service';
+import { videoService } from '@/services/api/video.service';
+import { programService } from '@/services/api/program.service';
+import { livestreamService } from '@/services/api/livestream.service';
 
 const Dashboard = () => {
-  // Mock data for charts - replace with actual API data later
-  const userGrowthData = [
-    { month: 'Jan', users: 120 },
-    { month: 'Feb', users: 190 },
-    { month: 'Mar', users: 300 },
-    { month: 'Apr', users: 450 },
-    { month: 'May', users: 580 },
-    { month: 'Jun', users: 720 },
+  // Fetch real stats from API
+  const { data: usersData, isLoading: usersLoading } = useQuery({
+    queryKey: ['dashboard-users'],
+    queryFn: async () => {
+      const response = await userService.getUsers({ page: 1, limit: 1 });
+      return response.data;
+    },
+  });
+
+  const { data: channelsData, isLoading: channelsLoading } = useQuery({
+    queryKey: ['dashboard-channels'],
+    queryFn: async () => {
+      const response = await channelService.getChannels({ page: 1, limit: 10 });
+      return response.data;
+    },
+  });
+
+  const { data: videosData, isLoading: videosLoading } = useQuery({
+    queryKey: ['dashboard-videos'],
+    queryFn: async () => {
+      const response = await videoService.getVideos({ page: 1, limit: 1 });
+      return response.data;
+    },
+  });
+
+  const { data: programsData, isLoading: programsLoading } = useQuery({
+    queryKey: ['dashboard-programs'],
+    queryFn: async () => {
+      const response = await programService.getPrograms({ page: 1, limit: 1 });
+      return response.data;
+    },
+  });
+
+  const { data: livestreamsData, isLoading: livestreamsLoading } = useQuery({
+    queryKey: ['dashboard-livestreams'],
+    queryFn: async () => {
+      const response = await livestreamService.getLivestreams({ page: 1, limit: 1 });
+      return response.data;
+    },
+  });
+
+  // Build stats for cards
+  const stats = [
+    {
+      label: 'Total Users',
+      value: usersLoading ? '...' : (usersData?.total ?? 0).toLocaleString(),
+      icon: Users,
+      subtitle: usersLoading ? 'Loading...' : 'Registered users',
+    },
+    {
+      label: 'Total Channels',
+      value: channelsLoading ? '...' : (channelsData?.total ?? 0).toLocaleString(),
+      icon: Radio,
+      subtitle: channelsLoading ? 'Loading...' : 'Active channels',
+    },
+    {
+      label: 'Total Videos',
+      value: videosLoading ? '...' : (videosData?.total ?? 0).toLocaleString(),
+      icon: Video,
+      subtitle: videosLoading ? 'Loading...' : 'Uploaded videos',
+    },
+    {
+      label: 'Programs',
+      value: programsLoading ? '...' : (programsData?.total ?? 0).toLocaleString(),
+      icon: Calendar,
+      subtitle: programsLoading ? 'Loading...' : 'Scheduled programs',
+    },
+    {
+      label: 'Livestreams',
+      value: livestreamsLoading ? '...' : (livestreamsData?.total ?? 0).toLocaleString(),
+      icon: Tv,
+      subtitle: livestreamsLoading ? 'Loading...' : 'Live streams',
+    },
   ];
 
-  const channelData = [
-    { name: 'Channel 1', videos: 45 },
-    { name: 'Channel 2', videos: 38 },
-    { name: 'Channel 3', videos: 52 },
-    { name: 'Channel 4', videos: 29 },
-    { name: 'Channel 5', videos: 41 },
-  ];
-
-  const videoViewsData = [
-    { day: 'Mon', views: 1200 },
-    { day: 'Tue', views: 1900 },
-    { day: 'Wed', views: 3000 },
-    { day: 'Thu', views: 2500 },
-    { day: 'Fri', views: 3200 },
-    { day: 'Sat', views: 2800 },
-    { day: 'Sun', views: 3500 },
-  ];
+  // Build channel chart data from real channels
+  const channelChartData = channelsData?.channels?.slice(0, 5).map(channel => ({
+    name: channel.name.length > 15 ? channel.name.substring(0, 15) + '...' : channel.name,
+    videos: channel.videoCount ?? 0,
+  })) ?? [];
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
-      <DashboardHeader />
+    <MainLayout showBreadcrumbs={false}>
+      <WelcomeSection />
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
-        <WelcomeSection />
+      {/* Stats Section */}
+      <section className="mb-8">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Overview</h3>
+        <StatsCards stats={stats} />
+      </section>
 
-        {/* Analytics Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <UserGrowthChart data={userGrowthData} />
-          <VideoViewsChart data={videoViewsData} />
-        </div>
-
-        {/* Channels Chart */}
-        <ChannelsChart data={channelData} />
-
-        {/* Menu Grid */}
+      {/* Quick Actions / Menu Grid */}
+      <section className="mb-8">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
         <MenuGrid />
+      </section>
 
-        {/* Stats Section */}
-        <StatsCards />
-      </main>
-    </div>
+      {/* Channels Chart - only show if we have channel data */}
+      {channelChartData.length > 0 && (
+        <section>
+          <ChannelsChart data={channelChartData} />
+        </section>
+      )}
+    </MainLayout>
   );
 };
 

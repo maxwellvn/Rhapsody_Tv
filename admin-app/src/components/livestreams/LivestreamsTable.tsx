@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { formatDate, formatDateTime } from '@/utils/helpers';
+import { formatDateTime } from '@/utils/helpers';
 import { livestreamService } from '@/services/api/livestream.service';
 import {
   Table,
@@ -11,7 +11,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Tv, Eye, Trash2, Radio, PlayCircle, Square, XCircle, Clock } from 'lucide-react';
+import { Tv, Eye, Trash2, Radio, Square, XCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState } from 'react';
 import Loader from '@/components/common/Loader';
@@ -171,7 +171,9 @@ const LivestreamsTable = () => {
                   </div>
                 </TableCell>
                 <TableCell className="text-gray-700 text-sm">
-                  {livestream.channelId.slice(0, 8)}...
+                  {typeof livestream.channelId === 'object' 
+                    ? (livestream.channelId as any).name 
+                    : livestream.channelId.slice(0, 8) + '...'}
                 </TableCell>
                 <TableCell>
                   <span

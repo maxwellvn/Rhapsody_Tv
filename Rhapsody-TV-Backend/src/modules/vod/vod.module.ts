@@ -8,6 +8,8 @@ import {
   VideoCommentSchema,
 } from './schemas/video-comment.schema';
 import { CommentLike, CommentLikeSchema } from './schemas/comment-like.schema';
+import { Watchlist, WatchlistSchema } from './schemas/watchlist.schema';
+import { WatchHistory, WatchHistorySchema } from './schemas/watch-history.schema';
 import { VodController } from './vod.controller';
 import { VodService } from './vod.service';
 
@@ -19,6 +21,8 @@ import { VodService } from './vod.service';
       { name: VideoLike.name, schema: VideoLikeSchema },
       { name: VideoComment.name, schema: VideoCommentSchema },
       { name: CommentLike.name, schema: CommentLikeSchema },
+      { name: Watchlist.name, schema: WatchlistSchema },
+      { name: WatchHistory.name, schema: WatchHistorySchema },
     ]),
   ],
   controllers: [VodController],

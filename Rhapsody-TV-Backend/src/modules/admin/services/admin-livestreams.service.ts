@@ -5,6 +5,7 @@ import {
   LiveStream,
   LiveStreamDocument,
   LiveStreamStatus,
+  LiveStreamScheduleType,
 } from '../../stream/schemas/live-stream.schema';
 import {
   CreateLivestreamDto,
@@ -20,10 +21,20 @@ export class AdminLivestreamsService {
   ) {}
 
   async create(dto: CreateLivestreamDto): Promise<LiveStreamDocument> {
+    const scheduleType = dto.scheduleType || 'continuous';
+    
+    // For continuous streams, default to LIVE status
+    // For scheduled streams, default to SCHEDULED status
+    const defaultStatus = scheduleType === 'continuous' 
+      ? LiveStreamStatus.LIVE 
+      : LiveStreamStatus.SCHEDULED;
+
     const livestream = new this.livestreamModel({
       ...dto,
       channelId: dto.channelId,
-      status: LiveStreamStatus.SCHEDULED,
+      programId: dto.programId || undefined,
+      scheduleType,
+      status: defaultStatus,
     });
 
     return livestream.save();
@@ -45,6 +56,7 @@ export class AdminLivestreamsService {
         .skip(skip)
         .limit(limit)
         .populate('channelId', 'name slug')
+        .populate('programId', 'name slug')
         .sort({ createdAt: -1 }),
       this.livestreamModel.countDocuments(),
     ]);
@@ -59,7 +71,8 @@ export class AdminLivestreamsService {
   async findById(id: string): Promise<LiveStreamDocument> {
     const livestream = await this.livestreamModel
       .findById(id)
-      .populate('channelId', 'name slug');
+      .populate('channelId', 'name slug')
+      .populate('programId', 'name slug');
 
     if (!livestream) {
       throw new NotFoundException('Livestream not found');

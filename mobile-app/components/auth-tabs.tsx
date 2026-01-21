@@ -1,17 +1,17 @@
 import { View, Pressable, Text, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+
+type AuthTab = 'register' | 'signin';
 
 type AuthTabsProps = {
-  activeTab: 'register' | 'signin';
+  activeTab: AuthTab;
+  onTabChange: (tab: AuthTab) => void;
 };
 
-export function AuthTabs({ activeTab }: AuthTabsProps) {
-  const router = useRouter();
-
+export function AuthTabs({ activeTab, onTabChange }: AuthTabsProps) {
   return (
     <View style={styles.container}>
       <Pressable
-        onPress={() => router.push('/(auth)/register')}
+        onPress={() => onTabChange('register')}
         style={[
           styles.tab,
           styles.leftTab,
@@ -29,7 +29,7 @@ export function AuthTabs({ activeTab }: AuthTabsProps) {
       </Pressable>
 
       <Pressable
-        onPress={() => router.push('/(auth)/signin')}
+        onPress={() => onTabChange('signin')}
         style={[
           styles.tab,
           styles.rightTab,

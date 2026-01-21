@@ -4,12 +4,11 @@ import { useState } from 'react';
 import { ArrowLeft, Video, Eye, Edit, Lock, Globe, EyeOff, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { videoService } from '@/services/api/video.service';
-import DashboardHeader from '@/components/layout/DashboardHeader';
+import MainLayout from '@/components/layout/MainLayout';
 import Loader from '@/components/common/Loader';
 import EditVideoForm from '@/components/videos/EditVideoForm';
 import { formatDate, formatDateTime } from '@/utils/helpers';
 import { ROUTES } from '@/utils/constants';
-import { toast } from 'sonner';
 
 const VideoDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -65,67 +64,53 @@ const VideoDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#FAFAFA]">
-        <DashboardHeader />
+      <MainLayout>
         <div className="flex items-center justify-center py-20">
           <Loader />
         </div>
-      </div>
+      </MainLayout>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-[#FAFAFA]">
-        <DashboardHeader />
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
-          <div 
-            className="bg-white/90 backdrop-blur-sm p-8 rounded-2xl border border-white/50 shadow-xl text-center"
-            style={{
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.5) inset',
-              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%)',
-            }}
+      <MainLayout>
+        <div 
+          className="bg-white/90 backdrop-blur-sm p-8 rounded-2xl border border-white/50 shadow-xl text-center"
+          style={{
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.5) inset',
+            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%)',
+          }}
+        >
+          <Video className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-black mb-2">Video Not Found</h2>
+          <p className="text-gray-600 mb-6">The video you're looking for doesn't exist or has been removed.</p>
+          <Button
+            onClick={() => navigate(ROUTES.VIDEOS)}
+            className="bg-[#0000FF] hover:bg-[#0000CC] text-white"
           >
-            <Video className="w-16 h-16 text-red-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-black mb-2">Video Not Found</h2>
-            <p className="text-gray-600 mb-6">The video you're looking for doesn't exist or has been removed.</p>
-            <Button
-              onClick={() => navigate(ROUTES.VIDEOS)}
-              className="bg-[#0000FF] hover:bg-[#0000CC] text-white"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Videos
-            </Button>
-          </div>
-        </main>
-      </div>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Videos
+          </Button>
+        </div>
+      </MainLayout>
     );
   }
 
   const video = data;
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
-      <DashboardHeader />
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
-        <div className="flex items-center justify-between mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate(ROUTES.VIDEOS)}
-            className="text-gray-600 hover:text-black"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Videos
-          </Button>
-          <Button
-            onClick={() => setIsEditing(!isEditing)}
-            className="bg-[#0000FF] hover:bg-[#0000CC] text-white"
-          >
-            <Edit className="w-4 h-4 mr-2" />
-            {isEditing ? 'Cancel Edit' : 'Edit Video'}
-          </Button>
-        </div>
+    <MainLayout>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-black">{video.title}</h1>
+        <Button
+          onClick={() => setIsEditing(!isEditing)}
+          className="bg-[#0000FF] hover:bg-[#0000CC] text-white"
+        >
+          <Edit className="w-4 h-4 mr-2" />
+          {isEditing ? 'Cancel Edit' : 'Edit Video'}
+        </Button>
+      </div>
 
         {isEditing ? (
           <EditVideoForm
@@ -242,9 +227,9 @@ const VideoDetail = () => {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-600 mb-1 block">Channel ID</label>
+                  <label className="text-sm font-medium text-gray-600 mb-1 block">Channel</label>
                   <p className="text-sm font-mono text-gray-900 bg-gray-50 px-3 py-2 rounded">
-                    {video.channelId}
+                    {typeof video.channelId === 'object' ? video.channelId.name : video.channelId}
                   </p>
                 </div>
 
@@ -314,8 +299,7 @@ const VideoDetail = () => {
             </div>
           </>
         )}
-      </main>
-    </div>
+    </MainLayout>
   );
 };
 

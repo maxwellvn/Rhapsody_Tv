@@ -180,7 +180,9 @@ const VideosTable = () => {
                   </div>
                 </TableCell>
                 <TableCell className="text-gray-700 text-sm">
-                  {video.channelId.slice(0, 8)}...
+                  {typeof video.channelId === 'object' 
+                    ? video.channelId.name 
+                    : video.channelId.slice(0, 8) + '...'}
                 </TableCell>
                 <TableCell className="text-gray-700">
                   {formatDuration(video.durationSeconds)}

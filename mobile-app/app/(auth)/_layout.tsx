@@ -6,6 +6,7 @@ export default function AuthLayout() {
       screenOptions={{
         headerShown: false,
       }}>
+      <Stack.Screen name="index" />
       <Stack.Screen name="register" />
       <Stack.Screen name="signin" />
       <Stack.Screen name="verify-email" />

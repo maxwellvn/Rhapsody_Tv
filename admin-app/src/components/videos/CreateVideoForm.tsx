@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -20,9 +19,11 @@ import { CreateVideoRequest } from '@/types/api.types';
 import { useQueryClient } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 import { channelService } from '@/services/api/channel.service';
+import { programService } from '@/services/api/program.service';
 
 const videoSchema = z.object({
   channelId: z.string().min(1, 'Channel is required'),
+  programId: z.string().optional(),
   title: z.string().min(1, 'Title is required').min(3, 'Title must be at least 3 characters'),
   description: z.string().optional(),
   playbackUrl: z.string().url('Must be a valid URL'),
@@ -55,10 +56,20 @@ const CreateVideoForm = ({ onSuccess }: CreateVideoFormProps) => {
     },
   });
 
+  // Fetch programs for dropdown
+  const { data: programsData } = useQuery({
+    queryKey: ['programs', 1, 100],
+    queryFn: async () => {
+      const response = await programService.getPrograms({ page: 1, limit: 100 });
+      return response.data;
+    },
+  });
+
   const form = useForm<VideoFormValues>({
     resolver: zodResolver(videoSchema),
     defaultValues: {
       channelId: '',
+      programId: '',
       title: '',
       description: '',
       playbackUrl: '',
@@ -74,6 +85,7 @@ const CreateVideoForm = ({ onSuccess }: CreateVideoFormProps) => {
     try {
       const payload: CreateVideoRequest = {
         channelId: data.channelId,
+        programId: data.programId?.trim() || undefined,
         title: data.title,
         description: data.description?.trim() || undefined,
         playbackUrl: data.playbackUrl,
@@ -137,29 +149,55 @@ const CreateVideoForm = ({ onSuccess }: CreateVideoFormProps) => {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
-            name="channelId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-black">Channel *</FormLabel>
-                <FormControl>
-                  <select
-                    {...field}
-                    className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  >
-                    <option value="">Select a channel</option>
-                    {channelsData?.channels.map((channel) => (
-                      <option key={channel.id} value={channel.id}>
-                        {channel.name}
-                      </option>
-                    ))}
-                  </select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="channelId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-black">Channel *</FormLabel>
+                  <FormControl>
+                    <select
+                      {...field}
+                      className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="">Select a channel</option>
+                      {channelsData?.channels.map((channel) => (
+                        <option key={channel.id} value={channel.id}>
+                          {channel.name}
+                        </option>
+                      ))}
+                    </select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="programId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-black">Program</FormLabel>
+                  <FormControl>
+                    <select
+                      {...field}
+                      className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="">Select a program (optional)</option>
+                      {programsData?.programs.map((program) => (
+                        <option key={program.id} value={program.id}>
+                          {program.title}
+                        </option>
+                      ))}
+                    </select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
           <FormField
             control={form.control}

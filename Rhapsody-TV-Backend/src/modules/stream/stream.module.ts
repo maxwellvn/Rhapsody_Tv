@@ -16,10 +16,16 @@ import {
   ContinueWatching,
   ContinueWatchingSchema,
 } from './schemas/continue-watching.schema';
+import {
+  LivestreamLike,
+  LivestreamLikeSchema,
+} from './schemas/livestream-like.schema';
 import { LivestreamGateway } from './gateways/livestream.gateway';
 import { LivestreamChatService } from './services/livestream-chat.service';
 import { LivestreamViewerService } from './services/livestream-viewer.service';
 import { ContinueWatchingService } from './services/continue-watching.service';
+import { LivestreamService } from './services/livestream.service';
+import { LivestreamController } from './livestream.controller';
 import jwtConfig from '../../config/jwt.config';
 
 @Module({
@@ -30,6 +36,7 @@ import jwtConfig from '../../config/jwt.config';
       { name: LiveStreamBan.name, schema: LiveStreamBanSchema },
       { name: Video.name, schema: VideoSchema },
       { name: ContinueWatching.name, schema: ContinueWatchingSchema },
+      { name: LivestreamLike.name, schema: LivestreamLikeSchema },
     ]),
     ConfigModule.forFeature(jwtConfig),
     JwtModule.registerAsync({
@@ -40,17 +47,20 @@ import jwtConfig from '../../config/jwt.config';
       inject: [ConfigService],
     }),
   ],
+  controllers: [LivestreamController],
   providers: [
     LivestreamGateway,
     LivestreamChatService,
     LivestreamViewerService,
     ContinueWatchingService,
+    LivestreamService,
   ],
   exports: [
     MongooseModule,
     LivestreamChatService,
     LivestreamViewerService,
     ContinueWatchingService,
+    LivestreamService,
   ],
 })
 export class StreamModule {}

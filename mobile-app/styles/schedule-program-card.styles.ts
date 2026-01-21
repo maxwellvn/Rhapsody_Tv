@@ -10,10 +10,18 @@ export const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
     padding: spacing.lg,
     marginBottom: hp(16),
+    overflow: 'hidden',
   },
   containerLive: {
     borderColor: '#EF4444',
     borderWidth: 2,
+  },
+  thumbnail: {
+    width: '100%',
+    height: hp(150),
+    borderRadius: borderRadius.md,
+    marginBottom: hp(12),
+    backgroundColor: '#F3F4F6',
   },
   topRow: {
     flexDirection: 'row',

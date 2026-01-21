@@ -104,8 +104,8 @@ export function useLogout() {
       // Clear all queries
       queryClient.clear();
       
-      // Navigate to login
-      router.replace('/(auth)/login');
+      // Navigate to auth
+      router.replace('/(auth)');
     },
   });
 }

@@ -10,10 +10,18 @@ export enum LiveStreamStatus {
   CANCELED = 'canceled',
 }
 
+export enum LiveStreamScheduleType {
+  CONTINUOUS = 'continuous', // 24/7 stream, no scheduled times
+  SCHEDULED = 'scheduled', // Has specific start/end times
+}
+
 @Schema({ timestamps: true })
 export class LiveStream {
   @Prop({ type: Types.ObjectId, ref: 'Channel', required: true, index: true })
   channelId: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'Program', index: true })
+  programId?: Types.ObjectId;
 
   @Prop({ required: true, trim: true })
   title: string;
@@ -23,13 +31,23 @@ export class LiveStream {
 
   @Prop({
     required: true,
+    enum: LiveStreamScheduleType,
+    default: LiveStreamScheduleType.CONTINUOUS,
+  })
+  scheduleType: LiveStreamScheduleType;
+
+  @Prop({
+    required: true,
     enum: LiveStreamStatus,
-    default: LiveStreamStatus.SCHEDULED,
+    default: LiveStreamStatus.LIVE,
   })
   status: LiveStreamStatus;
 
   @Prop({ index: true })
   scheduledStartAt?: Date;
+
+  @Prop()
+  scheduledEndAt?: Date;
 
   @Prop()
   startedAt?: Date;
@@ -51,6 +69,12 @@ export class LiveStream {
 
   @Prop({ default: false })
   isChatEnabled: boolean;
+
+  @Prop({ default: 0 })
+  viewerCount: number;
+
+  @Prop({ default: 0 })
+  likeCount: number;
 }
 
 export const LiveStreamSchema = SchemaFactory.createForClass(LiveStream);

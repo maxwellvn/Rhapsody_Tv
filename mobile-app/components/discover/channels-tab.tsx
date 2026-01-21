@@ -1,48 +1,50 @@
-import { Text, View, StyleSheet } from 'react-native';
+import { Text, View, StyleSheet, ActivityIndicator, ImageSourcePropType } from 'react-native';
 import { ChannelCard } from './channel-card';
 import { FONTS } from '@/styles/global';
+import { useHomepageChannels } from '@/hooks/queries/useHomepageQueries';
+import { router } from 'expo-router';
 
 export function ChannelsTab() {
-  const handleChannelPress = (channelName: string) => {
-    console.log('Channel pressed:', channelName);
+  const { data: channels, isLoading, error } = useHomepageChannels(20);
+
+  const handleChannelPress = (channelId: string, channelSlug: string) => {
+    router.push(`/channel-profile?slug=${channelSlug}&id=${channelId}`);
   };
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#2563EB" />
+      </View>
+    );
+  }
+
+  if (error || !channels || channels.length === 0) {
+    return (
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyText}>No channels available</Text>
+      </View>
+    );
+  }
 
   return (
     <>
       <Text style={styles.sectionTitle}>Channels</Text>
       <View style={styles.grid}>
-        <View style={styles.channelCardWrapper}>
-          <ChannelCard
-            logoSource={require('@/assets/logo/Logo.png')}
-            channelName="Rhapsody TV"
-            isLive={true}
-            onPress={() => handleChannelPress('Rhapsody TV')}
-          />
-        </View>
-        <View style={styles.channelCardWrapper}>
-          <ChannelCard
-            logoSource={require('@/assets/logo/logo-2.png')}
-            channelName="RORK TV"
-            isLive={true}
-            onPress={() => handleChannelPress('RORK TV')}
-          />
-        </View>
-        <View style={styles.channelCardWrapper}>
-          <ChannelCard
-            logoSource={require('@/assets/logo/logo-3.png')}
-            channelName="LingualTV"
-            isLive={true}
-            onPress={() => handleChannelPress('LingualTV')}
-          />
-        </View>
-        <View style={styles.channelCardWrapper}>
-          <ChannelCard
-            logoSource={require('@/assets/logo/logo-1.png')}
-            channelName="Rebroadcast Channel"
-            isLive={true}
-            onPress={() => handleChannelPress('Rebroadcast Channel')}
-          />
-        </View>
+        {channels.map((channel) => (
+          <View key={channel.id} style={styles.channelCardWrapper}>
+            <ChannelCard
+              logoSource={
+                channel.logoUrl
+                  ? { uri: channel.logoUrl } as ImageSourcePropType
+                  : require('@/assets/logo/Logo.png') as ImageSourcePropType
+              }
+              channelName={channel.name}
+              isLive={false}
+              onPress={() => handleChannelPress(channel.id, channel.slug)}
+            />
+          </View>
+        ))}
       </View>
     </>
   );
@@ -63,5 +65,22 @@ const styles = StyleSheet.create({
   },
   channelCardWrapper: {
     width: '47%',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    fontFamily: FONTS.regular,
+    color: '#666666',
   },
 });

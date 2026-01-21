@@ -2,56 +2,158 @@ import { LiveChat } from '@/components/live-video/live-chat';
 import { LiveChatModal } from '@/components/live-video/live-chat-modal';
 import { VideoPlayer } from '@/components/video-player';
 import { VideoRecommendationCard } from '@/components/video-recommendation-card';
-import { videoService } from '@/services/video.service';
 import { styles } from '@/styles/live-video.styles';
 import { dimensions, fs } from '@/utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { useState, useCallback, useEffect } from 'react';
+import { ActivityIndicator, Image, ImageSourcePropType, Pressable, ScrollView, Share, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { storage } from '@/utils/storage';
+import { 
+  useLivestream, 
+  useLivestreamStats,
+  useLivestreamLikeStatus,
+  useToggleLivestreamLike,
+} from '@/hooks/queries/useHomepageQueries';
+import { useVodVideos } from '@/hooks/queries/useVodQueries';
+import { 
+  useSubscriptionStatus, 
+  useSubscribe, 
+  useUnsubscribe 
+} from '@/hooks/queries/useChannelQueries';
 
 export default function LiveVideoScreen() {
-  const { id } = useLocalSearchParams<{ id?: string; liveStreamId?: string }>();
+  const { id, videoId } = useLocalSearchParams<{ id?: string; videoId?: string }>();
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [videoUri, setVideoUri] = useState<string | undefined>();
-  const [isLoadingVideo, setIsLoadingVideo] = useState(true);
+  const [userName, setUserName] = useState<string>('');
+  const [userAvatar, setUserAvatar] = useState<string | undefined>();
 
-  const fetchVideoStream = async () => {
-    // For testing/demo purposes, use a test video if no id is provided
-    if (!id) {
-      // Using HLS stream URL for demo purposes
-      setVideoUri('https://2nbyjxnbl53k-hls-live.5centscdn.com/RTV/59a49be6dc0f146c57cd9ee54da323b1.sdp/playlist.m3u8');
-      setIsLoadingVideo(false);
-      return;
-    }
-
-    try {
-      setIsLoadingVideo(true);
-      
-      // Try to get stream URL from video service
-      const response = await videoService.getStreamUrl(id);
-      
-      if (response.success && response.data?.streamUrl) {
-        setVideoUri(response.data.streamUrl);
-      } else {
-        // Fallback to HLS stream for demo purposes
-        setVideoUri('https://2nbyjxnbl53k-hls-live.5centscdn.com/RTV/59a49be6dc0f146c57cd9ee54da323b1.sdp/playlist.m3u8');
+  // Load user info for chat
+  useEffect(() => {
+    const loadUser = async () => {
+      const userData = await storage.getUserData<{ fullName?: string; avatar?: string }>();
+      if (userData) {
+        setUserName(userData.fullName || '');
+        setUserAvatar(userData.avatar);
       }
-    } catch (err: any) {
-      console.error('Error fetching video stream:', err);
-      // Fallback to HLS stream for demo purposes
-      setVideoUri('https://2nbyjxnbl53k-hls-live.5centscdn.com/RTV/59a49be6dc0f146c57cd9ee54da323b1.sdp/playlist.m3u8');
-    } finally {
-      setIsLoadingVideo(false);
-    }
+    };
+    loadUser();
+  }, []);
+
+  // Fetch livestream details
+  const { data: livestream, isLoading, error } = useLivestream(id || '');
+  const { data: recommendedVideos } = useVodVideos(1, 5);
+  
+  // Get channel ID from livestream data
+  const channelId = livestream?.channel?.id;
+  
+  // Fetch channel subscription status
+  const { data: subscriptionStatus } = useSubscriptionStatus(channelId);
+  const subscribeMutation = useSubscribe();
+  const unsubscribeMutation = useUnsubscribe();
+  
+  const isSubscribed = subscriptionStatus?.isSubscribed || false;
+  const isSubscriptionLoading = subscribeMutation.isPending || unsubscribeMutation.isPending;
+
+  // Fetch livestream stats (polls every 10 seconds for real-time updates)
+  const { data: statsData } = useLivestreamStats(id || '');
+  
+  // Fetch like status
+  const { data: likeStatus } = useLivestreamLikeStatus(id || '');
+  const toggleLikeMutation = useToggleLivestreamLike();
+  
+  const isLiked = likeStatus?.liked || false;
+  const likeCount = statsData?.likeCount || likeStatus?.likeCount || 0;
+  const viewerCount = statsData?.viewerCount || livestream?.viewerCount || 0;
+
+  // Format view count
+  const formatViews = (count?: number): string => {
+    if (!count) return '0 watching';
+    if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M watching`;
+    if (count >= 1000) return `${(count / 1000).toFixed(1)}k watching`;
+    return `${count} watching`;
   };
 
-  useEffect(() => {
-    fetchVideoStream();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  // Format time ago
+  const formatTimeAgo = (dateString?: string): string => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    
+    if (diffHours < 1) return 'Started just now';
+    if (diffHours === 1) return 'Started 1hr ago';
+    return `Started ${diffHours}hrs ago`;
+  };
+
+  const handleVideoPress = (recVideoId: string) => {
+    router.push(`/video?id=${recVideoId}`);
+  };
+
+  // Handle channel subscription toggle
+  const handleSubscriptionToggle = useCallback(() => {
+    if (!channelId || isSubscriptionLoading) return;
+    
+    if (isSubscribed) {
+      unsubscribeMutation.mutate(channelId);
+    } else {
+      subscribeMutation.mutate(channelId);
+    }
+  }, [channelId, isSubscribed, isSubscriptionLoading, subscribeMutation, unsubscribeMutation]);
+
+  // Handle like toggle
+  const handleLikeToggle = useCallback(() => {
+    if (!id || toggleLikeMutation.isPending) return;
+    toggleLikeMutation.mutate(id);
+  }, [id, toggleLikeMutation]);
+
+  // Handle share
+  const handleShare = useCallback(async () => {
+    try {
+      const shareUrl = `https://rhapsodytv.live/live/${id}`;
+      await Share.share({
+        message: `Watch "${livestream?.title || 'Live Stream'}" live on Rhapsody TV!\n${shareUrl}`,
+        url: shareUrl,
+        title: livestream?.title || 'Live Stream',
+      });
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
+  }, [id, livestream?.title]);
+
+  // Handle channel press - navigate to channel profile
+  const handleChannelPress = useCallback(() => {
+    if (channelId) {
+      router.push(`/channel-profile?id=${channelId}`);
+    }
+  }, [channelId]);
+
+  // Get filtered recommendations
+  const filteredRecommendations = recommendedVideos?.videos.slice(0, 4) || [];
+
+  // Use livestream playbackUrl if available, otherwise fallback to default
+  const streamUrl = livestream?.playbackUrl 
+    || 'https://2nbyjxnbl53k-hls-live.5centscdn.com/RTV/59a49be6dc0f146c57cd9ee54da323b1.sdp/playlist.m3u8';
+
+  if (isLoading && id) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]} edges={['top']}>
+        <ActivityIndicator size="large" color="#2563EB" />
+        <Text style={{ color: '#FFFFFF', marginTop: 16 }}>Loading livestream...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  // For now, show a fallback stream even if there's an error (for demo purposes)
+  const displayData = livestream || {
+    title: 'Live Stream',
+    description: '',
+    isLive: true,
+    channel: { name: 'Rhapsody TV', logoUrl: null, coverImageUrl: null },
+  };
 
   return (
     <>
@@ -60,24 +162,22 @@ export default function LiveVideoScreen() {
         <StatusBar style="light" />
 
         {/* Video Player - Always Visible */}
-        {isLoadingVideo && id ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#FFFFFF" />
-            <Text style={styles.loadingText}>Loading video...</Text>
-          </View>
-        ) : (
-          <VideoPlayer
-            videoUri={videoUri}
-            thumbnailSource={require('@/assets/images/carusel-2.png')}
-            isLive={true}
-          />
-        )}
+        <VideoPlayer
+          videoUri={streamUrl}
+          thumbnailSource={
+            displayData.channel?.coverImageUrl
+              ? { uri: displayData.channel.coverImageUrl } as ImageSourcePropType
+              : require('@/assets/images/carusel-2.png') as ImageSourcePropType
+          }
+          isLive={true}
+        />
 
         {isChatOpen ? (
           /* Live Chat View */
           <LiveChatModal
+            livestreamId={id || ''}
             onClose={() => setIsChatOpen(false)}
-            viewerCount="500k"
+            viewerCount={formatViews(0)}
           />
         ) : (
           /* Regular Content */
@@ -88,22 +188,26 @@ export default function LiveVideoScreen() {
             {/* Video Details */}
             <View style={styles.detailsContainer}>
               <Text style={styles.videoTitle}>
-                Your Loveworld Special with Pastor Chris Season 2 Phase 7
+                {displayData.title}
               </Text>
 
-              <View style={styles.channelInfo}>
+              <Pressable style={styles.channelInfo} onPress={handleChannelPress}>
                 <Image
-                  source={require('@/assets/images/Avatar.png')}
+                  source={
+                    displayData.channel?.logoUrl
+                      ? { uri: displayData.channel.logoUrl }
+                      : require('@/assets/images/Avatar.png')
+                  }
                   style={styles.channelIcon}
                   resizeMode="contain"
                 />
-                <Text style={styles.channelName}>Rhapsody TV</Text>
+                <Text style={styles.channelName}>{displayData.channel?.name || 'Rhapsody TV'}</Text>
                 <View style={styles.viewCountContainer}>
                   <Ionicons name="eye-outline" size={dimensions.isTablet ? fs(18) : fs(16)} color="#737373" />
-                  <Text style={styles.viewCount}>500k watching</Text>
+                  <Text style={styles.viewCount}>{formatViews(viewerCount)}</Text>
                 </View>
-                <Text style={styles.startedTime}>Started 3hrs ago</Text>
-              </View>
+                <Text style={styles.startedTime}>{formatTimeAgo(livestream?.startedAt || livestream?.startTime)}</Text>
+              </Pressable>
 
               {/* Action Buttons */}
               <ScrollView
@@ -112,13 +216,38 @@ export default function LiveVideoScreen() {
                 contentContainerStyle={styles.actionButtons}
                 style={styles.actionButtonsContainer}
               >
-                <Pressable style={styles.subscribeButton}>
-                  <Text style={styles.subscribeButtonText}>Subscribe</Text>
+                <Pressable 
+                  style={[
+                    styles.subscribeButton,
+                    isSubscribed && styles.subscribedButton
+                  ]}
+                  onPress={handleSubscriptionToggle}
+                  disabled={isSubscriptionLoading || !channelId}
+                >
+                  <Text style={[
+                    styles.subscribeButtonText,
+                    isSubscribed && styles.subscribedButtonText
+                  ]}>
+                    {isSubscriptionLoading ? '...' : isSubscribed ? 'Subscribed' : 'Subscribe'}
+                  </Text>
                 </Pressable>
 
-                <Pressable style={styles.actionButton}>
-                  <Ionicons name="thumbs-up-outline" size={dimensions.isTablet ? fs(16) : fs(14)} color="#000000" />
-                  <Text style={styles.actionButtonText}>Label</Text>
+                <Pressable 
+                  style={styles.actionButton} 
+                  onPress={handleLikeToggle}
+                  disabled={toggleLikeMutation.isPending}
+                >
+                  <Ionicons 
+                    name={isLiked ? "thumbs-up" : "thumbs-up-outline"} 
+                    size={dimensions.isTablet ? fs(16) : fs(14)} 
+                    color={isLiked ? "#2563EB" : "#000000"} 
+                  />
+                  <Text style={[
+                    styles.actionButtonText,
+                    isLiked && { color: '#2563EB' }
+                  ]}>
+                    {likeCount > 0 ? likeCount : 'Like'}
+                  </Text>
                 </Pressable>
 
                 <Pressable style={styles.actionButton}>
@@ -126,42 +255,43 @@ export default function LiveVideoScreen() {
                   <Text style={styles.actionButtonText}>Sponsor</Text>
                 </Pressable>
 
-                <Pressable style={styles.actionButton}>
+                <Pressable style={styles.actionButton} onPress={handleShare}>
                   <Ionicons name="share-social-outline" size={dimensions.isTablet ? fs(16) : fs(14)} color="#000000" />
                   <Text style={styles.actionButtonText}>Share</Text>
-                </Pressable>
-
-                <Pressable style={styles.actionButton}>
-                  <Ionicons name="download-outline" size={dimensions.isTablet ? fs(16) : fs(14)} color="#000000" />
-                  <Text style={styles.actionButtonText}>Download</Text>
                 </Pressable>
               </ScrollView>
             </View>
 
             {/* Live Chat Section */}
-            <LiveChat onPress={() => setIsChatOpen(true)} />
+            <LiveChat 
+              onPress={() => setIsChatOpen(true)} 
+              userName={userName}
+              userAvatar={userAvatar}
+            />
 
             {/* Video Recommendations */}
             <View style={styles.recommendationsContainer}>
-              <VideoRecommendationCard
-                thumbnailSource={require('@/assets/images/Image-2.png')}
-                title="Night Of A Thousand Crusades HIGHLIGHT 3"
-                channelName="Rhapsody TV"
-                channelAvatar={require('@/assets/images/Avatar.png')}
-                viewCount="500k views"
-                timeAgo="3hrs ago"
-                isNew={true}
-              />
-
-              <VideoRecommendationCard
-                thumbnailSource={require('@/assets/images/Image-6.png')}
-                title="NOTHING ON MEDIA IS NEUTRAL A CONVERSATION WITH BLOSSOM CH..."
-                channelName="Program Highlights"
-                channelAvatar={require('@/assets/images/Avatar.png')}
-                viewCount="500k views"
-                timeAgo="3hrs ago"
-                isNew={true}
-              />
+              {filteredRecommendations.map((recVideo) => (
+                <VideoRecommendationCard
+                  key={recVideo.id}
+                  thumbnailSource={
+                    recVideo.thumbnailUrl
+                      ? { uri: recVideo.thumbnailUrl } as ImageSourcePropType
+                      : require('@/assets/images/Image-2.png') as ImageSourcePropType
+                  }
+                  title={recVideo.title}
+                  channelName={recVideo.channel?.name || 'Unknown Channel'}
+                  channelAvatar={
+                    recVideo.channel?.logoUrl
+                      ? { uri: recVideo.channel.logoUrl } as ImageSourcePropType
+                      : require('@/assets/images/Avatar.png') as ImageSourcePropType
+                  }
+                  viewCount={`${recVideo.viewCount} views`}
+                  timeAgo=""
+                  isNew={true}
+                  onPress={() => handleVideoPress(recVideo.id)}
+                />
+              ))}
             </View>
           </ScrollView>
         )}

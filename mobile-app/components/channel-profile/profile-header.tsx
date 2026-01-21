@@ -10,6 +10,8 @@ type ChannelProfileHeaderProps = {
   subscriberCount: string;
   videoCount: string;
   description: string;
+  isSubscribed?: boolean;
+  isLoading?: boolean;
   onSubscribe?: () => void;
 };
 
@@ -20,6 +22,8 @@ export function ChannelProfileHeader({
   subscriberCount,
   videoCount,
   description,
+  isSubscribed = false,
+  isLoading = false,
   onSubscribe,
 }: ChannelProfileHeaderProps) {
   return (
@@ -59,10 +63,17 @@ export function ChannelProfileHeader({
         {/* Subscribe Button */}
         <Button 
           onPress={onSubscribe}
-          style={styles.subscribeButton}
-          textStyle={styles.subscribeButtonText}
+          style={[
+            styles.subscribeButton,
+            isSubscribed && styles.subscribedButton
+          ]}
+          textStyle={[
+            styles.subscribeButtonText,
+            isSubscribed && styles.subscribedButtonText
+          ]}
+          disabled={isLoading}
         >
-          Subscribe
+          {isLoading ? 'Loading...' : isSubscribed ? 'Subscribed' : 'Subscribe'}
         </Button>
       </View>
     </View>
@@ -128,10 +139,16 @@ const styles = StyleSheet.create({
     paddingVertical: hp(12),
     marginBottom: hp(24),
   },
+  subscribedButton: {
+    backgroundColor: '#E5E5E5',
+  },
   subscribeButtonText: {
     fontSize: fs(16),
     fontFamily: FONTS.semibold,
     color: '#FFFFFF',
     textAlign: 'center',
+  },
+  subscribedButtonText: {
+    color: '#333333',
   },
 });

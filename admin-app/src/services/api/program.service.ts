@@ -6,8 +6,13 @@ import {
   CreateProgramRequest, 
   UpdateProgramRequest,
   ProgramsListResponse,
-  PaginationParams 
+  PaginationParams,
+  ScheduleType,
 } from '@/types/api.types';
+
+interface ProgramsParams extends PaginationParams {
+  scheduleType?: ScheduleType;
+}
 
 /**
  * Program Service
@@ -15,9 +20,9 @@ import {
  */
 class ProgramService {
   /**
-   * Get list of programs with pagination
+   * Get list of programs with pagination and filtering
    */
-  async getPrograms(params?: PaginationParams): Promise<ApiResponse<ProgramsListResponse>> {
+  async getPrograms(params?: ProgramsParams): Promise<ApiResponse<ProgramsListResponse>> {
     const queryParams = new URLSearchParams();
     
     if (params?.page) queryParams.append('page', params.page.toString());
@@ -25,6 +30,7 @@ class ProgramService {
     if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
     if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
     if (params?.search) queryParams.append('search', params.search);
+    if (params?.scheduleType) queryParams.append('scheduleType', params.scheduleType);
     
     const queryString = queryParams.toString();
     const url = queryString 

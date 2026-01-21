@@ -1,13 +1,57 @@
 import { ChannelCard } from '@/components/schedule/channel-card';
 import { FONTS } from '@/styles/global';
-import { fs, hp } from '@/utils/responsive';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { fs, hp, wp, borderRadius } from '@/utils/responsive';
+import { ActivityIndicator, ImageSourcePropType, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useHomepageChannels } from '@/hooks/queries/useHomepageQueries';
+import { Skeleton } from '@/components/skeleton';
 
-export function ScheduleChannelsList() {
-  const handleChannelPress = (channelName: string) => {
-    console.log('Channel pressed:', channelName);
-    // Navigation logic will go here
+interface ScheduleChannelsListProps {
+  onChannelSelect?: (channelId: string) => void;
+  selectedChannelId?: string | null;
+}
+
+export function ScheduleChannelsList({ onChannelSelect, selectedChannelId }: ScheduleChannelsListProps) {
+  const { data: channels, isLoading, error } = useHomepageChannels(20);
+
+  const handleChannelPress = (channelId: string) => {
+    if (onChannelSelect) {
+      onChannelSelect(channelId);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Channels List</Text>
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          style={styles.scrollView}
+        >
+          {[1, 2, 3, 4].map((item) => (
+            <View key={item} style={styles.skeletonCard}>
+              <Skeleton width={wp(80)} height={hp(80)} borderRadius={borderRadius.md} />
+              <Skeleton width={wp(70)} height={fs(12)} borderRadius={borderRadius.xs} style={{ marginTop: 8 }} />
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+    );
+  }
+
+  if (error || !channels || channels.length === 0) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Channels List</Text>
+        </View>
+        <Text style={styles.emptyText}>No channels available</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -23,30 +67,19 @@ export function ScheduleChannelsList() {
         contentContainerStyle={styles.scrollContent}
         style={styles.scrollView}
       >
-        <ChannelCard
-          logoSource={require('@/assets/logo/Logo.png')}
-          channelName="Rhapsody TV"
-          isLive={true}
-          onPress={() => handleChannelPress('Rhapsody TV')}
-        />
-        <ChannelCard
-          logoSource={require('@/assets/logo/logo-2.png')}
-          channelName="RORK TV"
-          isLive={true}
-          onPress={() => handleChannelPress('RORK TV')}
-        />
-        <ChannelCard
-          logoSource={require('@/assets/logo/logo-3.png')}
-          channelName="LingualTV"
-          isLive={true}
-          onPress={() => handleChannelPress('LingualTV')}
-        />
-        <ChannelCard
-          logoSource={require('@/assets/logo/logo-1.png')}
-          channelName="Rebroadcast Channel"
-          isLive={true}
-          onPress={() => handleChannelPress('Rebroadcast Channel')}
-        />
+        {channels.map((channel) => (
+          <ChannelCard
+            key={channel.id}
+            logoSource={
+              channel.logoUrl
+                ? { uri: channel.logoUrl } as ImageSourcePropType
+                : require('@/assets/logo/Logo.png') as ImageSourcePropType
+            }
+            channelName={channel.name}
+            isLive={selectedChannelId === channel.id}
+            onPress={() => handleChannelPress(channel.id)}
+          />
+        ))}
       </ScrollView>
     </View>
   );
@@ -72,5 +105,15 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingRight: 0,
+  },
+  skeletonCard: {
+    width: wp(80),
+    marginRight: 12,
+  },
+  emptyText: {
+    fontSize: fs(14),
+    fontFamily: FONTS.regular,
+    color: '#666666',
+    paddingVertical: 20,
   },
 });
