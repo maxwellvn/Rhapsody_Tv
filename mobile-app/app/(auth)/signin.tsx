@@ -115,7 +115,7 @@ export default function SignInScreen() {
         style={styles.backButton}
         hitSlop={8}
       >
-        <Ionicons name="chevron-back" size={24} color="#FAFAFA" />
+        <Ionicons name="chevron-back" size={20} color="#FAFAFA" />
       </Pressable>
 
       {/* Welcome Text */}
@@ -187,8 +187,8 @@ export default function SignInScreen() {
         </Pressable>
 
         {/* Sign In Button */}
-        <Pressable 
-          style={[styles.registerButton, { marginTop: 100 }, isLoading && styles.registerButtonDisabled]}
+        <Pressable
+          style={[styles.registerButton, isLoading && styles.registerButtonDisabled]}
           onPress={handleSignIn}
           disabled={isLoading}
         >

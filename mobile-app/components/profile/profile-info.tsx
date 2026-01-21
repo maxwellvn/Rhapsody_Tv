@@ -5,10 +5,11 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 type ProfileInfoProps = {
   avatarSource: any;
   name: string;
+  email?: string;
   onEditPress?: () => void;
 };
 
-export function ProfileInfo({ avatarSource, name, onEditPress }: ProfileInfoProps) {
+export function ProfileInfo({ avatarSource, name, email, onEditPress }: ProfileInfoProps) {
   return (
     <View style={styles.container}>
       <Image
@@ -16,9 +17,10 @@ export function ProfileInfo({ avatarSource, name, onEditPress }: ProfileInfoProp
         style={styles.avatar}
         resizeMode="cover"
       />
-      
+
       <View style={styles.infoContainer}>
         <Text style={styles.name}>{name}</Text>
+        {email && <Text style={styles.email}>{email}</Text>}
       </View>
       
       <Pressable style={styles.editButton} onPress={onEditPress}>
@@ -54,6 +56,12 @@ const styles = StyleSheet.create({
     fontSize: fs(24),
     fontFamily: FONTS.bold,
     color: '#000000',
+  },
+  email: {
+    fontSize: fs(14),
+    fontFamily: FONTS.regular,
+    color: '#666666',
+    marginTop: hp(4),
   },
   editButton: {
     flexDirection: 'row',

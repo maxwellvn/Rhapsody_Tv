@@ -7,9 +7,48 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useEffect, useState } from 'react';
+import { userService } from '@/services/user.service';
+import { storage } from '@/utils/storage';
+import { ActivityIndicator } from 'react-native';
+
+interface UserProfile {
+  fullName: string;
+  email: string;
+  avatar?: string;
+}
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    try {
+      // First, try to load from storage (faster, shows cached data)
+      const cachedUser = await storage.getUserData<UserProfile>();
+      if (cachedUser) {
+        setUserProfile(cachedUser);
+      }
+
+      // Then fetch fresh data from API
+      const response = await userService.getProfile();
+      if (response.success && response.data) {
+        setUserProfile(response.data as UserProfile);
+        // Update cached data
+        await storage.saveUserData(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      // If API fails, we'll show cached data if available
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleNotificationPress = () => {
     router.push('/notifications');
@@ -20,8 +59,7 @@ export default function ProfileScreen() {
   };
 
   const handleEditProfile = () => {
-    console.log('Edit profile pressed');
-    // Edit profile navigation will go here
+    router.push('/edit-profile');
   };
 
   const handleDownloadedVideos = () => {
@@ -68,15 +106,22 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
-        <ProfileInfo
-          avatarSource={require('@/assets/images/Avatar.png')}
-          name="Lennox Koko"
-          onEditPress={handleEditProfile}
-        />
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#2563EB" />
+          </View>
+        ) : (
+          <ProfileInfo
+            avatarSource={userProfile?.avatar ? { uri: userProfile.avatar } : require('@/assets/images/Avatar.png')}
+            name={userProfile?.fullName || 'Guest User'}
+            email={userProfile?.email || ''}
+            onEditPress={handleEditProfile}
+          />
+        )}
 
         {/* History Section */}
         <ProfileSection
@@ -178,5 +223,10 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  loadingContainer: {
+    paddingVertical: hp(40),
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

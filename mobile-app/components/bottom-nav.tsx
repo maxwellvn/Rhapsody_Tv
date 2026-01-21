@@ -1,5 +1,6 @@
 import { FONTS } from '@/styles/global';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type TabName = 'Home' | 'Discover' | 'Schedule' | 'Profile';
 
@@ -9,6 +10,8 @@ type BottomNavProps = {
 };
 
 export function BottomNav({ activeTab = 'Home', onTabPress }: BottomNavProps) {
+  const insets = useSafeAreaInsets();
+
   const handleTabPress = (tab: TabName) => {
     if (onTabPress) {
       onTabPress(tab);
@@ -16,7 +19,7 @@ export function BottomNav({ activeTab = 'Home', onTabPress }: BottomNavProps) {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       {/* Home Tab */}
       <Pressable 
         style={styles.tab} 
@@ -130,7 +133,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#E5E5E5',
-    paddingVertical: 8,
+    paddingTop: 8,
     paddingHorizontal: 8,
     paddingBottom: 8,
   },

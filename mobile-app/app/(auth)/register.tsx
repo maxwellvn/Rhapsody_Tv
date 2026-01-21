@@ -8,6 +8,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { authService } from '@/services/auth.service';
+import { storage } from '@/utils/storage';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -64,47 +66,45 @@ export default function RegisterScreen() {
   };
 
   const handleRegister = async () => {
-    // Commented out for testing - navigate directly to homepage
-    // if (!validateForm()) {
-    //   return;
-    // }
-    
-    // setIsLoading(true);
-    
-    // try {
-    //   const userEmail = email.trim().toLowerCase();
-      
-    //   // Step 1: Register user
-    //   const response = await authService.register({
-    //     fullName: fullName.trim(),
-    //     email: userEmail,
-    //     password,
-    //   });
-      
-    //   if (response.success) {
-    //     // Save tokens to storage
-    //     await storage.saveTokens(
-    //       response.data.accessToken,
-    //       response.data.refreshToken
-    //     );
-        
-    //     // Save user data
-    //     await storage.saveUserData(response.data.user);
-        
-    //     // Navigate directly to home page (bypassing email verification for testing)
-    //     router.replace('/(tabs)');
-        
-    //     showSuccess(response.message || 'Registration successful!');
-    //   }
-    // } catch (error: any) {
-    //   console.error('Registration error:', error);
-    //   showError(error.message || 'An error occurred during registration. Please try again.');
-    // } finally {
-    //   setIsLoading(false);
-    // }
+    if (!validateForm()) {
+      return;
+    }
 
-    // Navigate directly to homepage regardless of any validation or API calls
-    router.replace('/(tabs)');
+    setIsLoading(true);
+
+    try {
+      const userEmail = email.trim().toLowerCase();
+
+      // Register user
+      const response = await authService.register({
+        fullName: fullName.trim(),
+        email: userEmail,
+        password,
+      });
+
+      if (response.success) {
+        // Save tokens to storage
+        await storage.saveTokens(
+          response.data.accessToken,
+          response.data.refreshToken
+        );
+
+        // Save user data
+        await storage.saveUserData(response.data.user);
+
+        // For development: auto-verify email by updating in MongoDB
+        // In production, you would navigate to email verification screen
+        showSuccess('Registration successful! Welcome to Rhapsody TV!');
+
+        // Navigate to home page
+        router.replace('/(tabs)');
+      }
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      showError(error.message || 'An error occurred during registration. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -124,7 +124,7 @@ export default function RegisterScreen() {
           style={styles.backButton}
           hitSlop={8}
         >
-          <Ionicons name="chevron-back" size={24} color="#FAFAFA" />
+          <Ionicons name="chevron-back" size={20} color="#FAFAFA" />
         </Pressable>
 
         {/* Welcome Text */}

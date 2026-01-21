@@ -5,7 +5,8 @@
 
 export const API_CONFIG = {
   // Backend API base URL
-  BASE_URL: 'https://rhapsody-tv-backend.fly.dev/v1',
+  // Use local IP for React Native/Expo (localhost doesn't work in mobile)
+  BASE_URL: 'http://172.20.10.3:3000/v1',
   
   // Timeout duration in milliseconds
   TIMEOUT: 30000,
@@ -30,8 +31,8 @@ export const API_ENDPOINTS = {
   
   // User
   USER: {
-    PROFILE: '/user/profile',
-    UPDATE_PROFILE: '/user/profile/update',
+    PROFILE: '/users/me',
+    UPDATE_PROFILE: '/users/me',
     UPLOAD_AVATAR: '/user/avatar',
     PREFERENCES: '/user/preferences',
   },
