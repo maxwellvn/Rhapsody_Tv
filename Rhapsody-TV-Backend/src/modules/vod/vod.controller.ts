@@ -18,7 +18,7 @@ import {
 } from '@nestjs/swagger';
 import { VodService } from './vod.service';
 import { CreateCommentDto } from './dto';
-import { CurrentUser } from '../../common/decorators';
+import { CurrentUser, Public } from '../../common/decorators';
 import type { UserDocument } from '../user/schemas/user.schema';
 import {
   ApiCreatedSuccessResponse,
@@ -37,6 +37,7 @@ import {
 export class VodController {
   constructor(private readonly vodService: VodService) {}
 
+  @Public()
   @Get()
   @ApiOperation({ summary: 'Get all public videos (paginated)' })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
@@ -62,6 +63,48 @@ export class VodController {
   }
 
   // ============== STATIC ROUTES (must come before :videoId) ==============
+
+  @Public()
+  @Get('featured')
+  @ApiOperation({ summary: 'Get featured videos (paginated)' })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
+  @ApiOkSuccessResponse({
+    description: 'Featured videos retrieved successfully',
+    model: VodPaginatedVideosResponseDto,
+  })
+  async getFeaturedVideos(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const result = await this.vodService.getFeaturedVideos(page, limit);
+    return {
+      success: true,
+      message: 'Featured videos retrieved successfully',
+      data: result,
+    };
+  }
+
+  @Public()
+  @Get('latest')
+  @ApiOperation({ summary: 'Get latest videos (paginated)' })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
+  @ApiOkSuccessResponse({
+    description: 'Latest videos retrieved successfully',
+    model: VodPaginatedVideosResponseDto,
+  })
+  async getLatestVideos(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const result = await this.vodService.getLatestVideos(page, limit);
+    return {
+      success: true,
+      message: 'Latest videos retrieved successfully',
+      data: result,
+    };
+  }
 
   @Get('watchlist')
   @ApiOperation({ summary: 'Get user watchlist' })
@@ -121,6 +164,7 @@ export class VodController {
 
   // ============== DYNAMIC :videoId ROUTES ==============
 
+  @Public()
   @Get(':videoId')
   @ApiOperation({ summary: 'Get video details and increment view count' })
   @ApiParam({ name: 'videoId', description: 'Video ID' })
@@ -176,6 +220,7 @@ export class VodController {
     };
   }
 
+  @Public()
   @Get(':videoId/comments')
   @ApiOperation({ summary: 'Get comments for a video (with nested replies)' })
   @ApiParam({ name: 'videoId', description: 'Video ID' })

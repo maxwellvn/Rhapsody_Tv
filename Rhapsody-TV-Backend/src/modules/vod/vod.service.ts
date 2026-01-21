@@ -47,12 +47,13 @@ export class VodService {
     const skip = (page - 1) * limit;
     const filter: Record<string, any> = { isActive: true, visibility: 'public' };
     
+    // Support both ObjectId and string formats for backward compatibility
     if (programId && Types.ObjectId.isValid(programId)) {
-      filter.programId = new Types.ObjectId(programId);
+      filter.programId = { $in: [new Types.ObjectId(programId), programId] };
     }
     
     if (channelId && Types.ObjectId.isValid(channelId)) {
-      filter.channelId = new Types.ObjectId(channelId);
+      filter.channelId = { $in: [new Types.ObjectId(channelId), channelId] };
     }
 
     const [videos, total] = await Promise.all([
@@ -84,6 +85,62 @@ export class VodService {
       throw new BadRequestException('Invalid program ID');
     }
     return this.getVideos(page, limit, programId);
+  }
+
+  /**
+   * Get featured videos with pagination
+   */
+  async getFeaturedVideos(page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    const filter = { isActive: true, visibility: 'public', isFeatured: true };
+
+    const [videos, total] = await Promise.all([
+      this.videoModel
+        .find(filter)
+        .sort({ publishedAt: -1, createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate('channelId', 'name logoUrl')
+        .populate('programId', 'title')
+        .exec(),
+      this.videoModel.countDocuments(filter),
+    ]);
+
+    return {
+      videos: videos.map((video) => this.formatVideoResponse(video)),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  /**
+   * Get latest videos with pagination (sorted by createdAt)
+   */
+  async getLatestVideos(page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    const filter = { isActive: true, visibility: 'public' };
+
+    const [videos, total] = await Promise.all([
+      this.videoModel
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate('channelId', 'name logoUrl')
+        .populate('programId', 'title')
+        .exec(),
+      this.videoModel.countDocuments(filter),
+    ]);
+
+    return {
+      videos: videos.map((video) => this.formatVideoResponse(video)),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   /**

@@ -110,6 +110,8 @@ export const API_ENDPOINTS = {
     DELETE: (id: string) => `/notifications/${id}`,
     SETTINGS: '/notifications/settings',
     UPDATE_SETTINGS: '/notifications/settings/update',
+    REGISTER_TOKEN: '/notifications/register-token',
+    UNREGISTER_TOKEN: '/notifications/unregister-token',
   },
   
   // Settings
@@ -149,6 +151,8 @@ export const API_ENDPOINTS = {
   // VOD (Video on Demand)
   VOD: {
     LIST: '/vod',
+    FEATURED: '/vod/featured',
+    LATEST: '/vod/latest',
     DETAILS: (id: string) => `/vod/${id}`,
     LIKE: (id: string) => `/vod/${id}/like`,
     LIKE_STATUS: (id: string) => `/vod/${id}/like-status`,

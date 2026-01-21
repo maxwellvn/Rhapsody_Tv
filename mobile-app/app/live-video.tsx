@@ -234,7 +234,7 @@ export default function LiveVideoScreen() {
                   <Ionicons name="eye-outline" size={dimensions.isTablet ? fs(18) : fs(16)} color="#737373" />
                   <Text style={styles.viewCount}>{formatViews(viewerCount)}</Text>
                 </View>
-                <Text style={styles.startedTime}>{formatTimeAgo(livestream?.startedAt || livestream?.startTime)}</Text>
+                <Text style={styles.startedTime}>{formatTimeAgo(livestream?.startedAt || livestream?.createdAt)}</Text>
               </Pressable>
 
               {/* Action Buttons */}

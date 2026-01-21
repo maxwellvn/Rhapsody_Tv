@@ -266,15 +266,15 @@ export function ModernVideoPlayer({
           {/* Tap area for showing/hiding controls */}
           <Pressable style={StyleSheet.absoluteFill} onPress={handleContainerPress} />
 
-          {/* Loading Indicator */}
+          {/* Loading Indicator - placed below controls so back button is accessible */}
           {isLoading && (
-            <View style={styles.loadingContainer}>
+            <View style={styles.loadingContainer} pointerEvents="none">
               <ActivityIndicator size="large" color="#FFFFFF" />
             </View>
           )}
 
-          {/* Custom Controls Overlay */}
-          {showControls && (
+          {/* Custom Controls Overlay - always show back button during loading */}
+          {(showControls || isLoading) && (
             <Animated.View style={[styles.controlsOverlay, { opacity: controlsOpacity }]}>
               {/* Top Gradient */}
               <LinearGradient
@@ -420,7 +420,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    zIndex: 10,
   },
   controlsOverlay: {
     ...StyleSheet.absoluteFillObject,

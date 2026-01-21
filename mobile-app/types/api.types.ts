@@ -174,11 +174,17 @@ export interface CreateCommentRequest {
 export type NotificationType = 
   | 'new_video' 
   | 'new_livestream' 
+  | 'livestream_starting'
+  | 'livestream_live'
+  | 'new_channel'
+  | 'new_program'
   | 'comment_reply' 
   | 'video_like' 
   | 'new_subscriber' 
   | 'channel_update' 
-  | 'program_reminder' 
+  | 'program_reminder'
+  | 'program_starting'
+  | 'announcement'
   | 'system';
 
 export interface Notification {

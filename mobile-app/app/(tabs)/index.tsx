@@ -31,8 +31,8 @@ export default function HomeScreen() {
     router.push('/notifications');
   };
 
-  const handleSearch = (text: string) => {
-    console.log('Search:', text);
+  const handleSearchFocus = () => {
+    router.push('/search');
   };
 
   const handleTabPress = (tab: string) => {
@@ -67,13 +67,14 @@ export default function HomeScreen() {
         </Pressable>
       </View>
 
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <SearchBar 
-          placeholder="Search channels and programs..."
-          onSearch={handleSearch}
-        />
-      </View>
+      {/* Search Bar - tapping navigates to search screen */}
+      <Pressable style={styles.searchContainer} onPress={handleSearchFocus}>
+        <View pointerEvents="none">
+          <SearchBar 
+            placeholder="Search channels and programs..."
+          />
+        </View>
+      </Pressable>
 
       {/* Content */}
       <ScrollView 

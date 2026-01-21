@@ -20,7 +20,7 @@ export function ProgramsSection() {
   };
 
   const handleSeeAllPress = () => {
-    router.push('/(tabs)/discover');
+    router.push('/(tabs)/discover?tab=programs');
   };
 
   if (isLoading) {

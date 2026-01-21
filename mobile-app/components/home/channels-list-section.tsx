@@ -14,7 +14,7 @@ export function ChannelsListSection() {
   };
 
   const handleSeeAllPress = () => {
-    router.push('/(tabs)/discover');
+    router.push('/(tabs)/discover?tab=channels');
   };
 
   // Show loading state with skeleton

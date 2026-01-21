@@ -9,9 +9,10 @@ import { router } from 'expo-router';
 interface HomeTabProps {
   channelId: string;
   channelName: string;
+  channelLogoUrl?: string;
 }
 
-export function HomeTab({ channelId, channelName }: HomeTabProps) {
+export function HomeTab({ channelId, channelName, channelLogoUrl }: HomeTabProps) {
   const { data: videosData, isLoading, error } = useChannelVideos(channelId, 1, 10);
 
   const handleVideoPress = (videoId: string) => {
@@ -84,7 +85,11 @@ export function HomeTab({ channelId, channelName }: HomeTabProps) {
               : require('@/assets/images/Image-12.png') as ImageSourcePropType
           }
           title={featuredVideo.title}
-          channelAvatar={require('@/assets/images/Avatar.png')}
+          channelAvatar={
+            channelLogoUrl
+              ? { uri: channelLogoUrl } as ImageSourcePropType
+              : require('@/assets/images/Avatar.png') as ImageSourcePropType
+          }
           channelName={channelName}
           viewCount={formatViews(featuredVideo.viewCount)}
           timeAgo={formatTimeAgo(featuredVideo.publishedAt || featuredVideo.createdAt)}

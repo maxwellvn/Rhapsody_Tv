@@ -14,7 +14,7 @@ export function ProgramHighlightsSection() {
   };
 
   const handleSeeAllPress = () => {
-    router.push('/(tabs)/discover');
+    router.push('/latest-videos');
   };
 
   if (isLoading) {

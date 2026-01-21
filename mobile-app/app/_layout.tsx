@@ -17,6 +17,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AppProvider } from '@/context/AppProvider';
 import { PiPProvider } from '@/contexts/pip-context';
 import { MiniPlayer } from '@/components/mini-player';
+import { pushNotificationService } from '@/services/push-notification.service';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -40,6 +41,30 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [loaded, error]);
+
+  // Initialize push notifications
+  useEffect(() => {
+    const initPushNotifications = async () => {
+      // Initialize the service (checks if native module is available)
+      const isAvailable = await pushNotificationService.initialize();
+      
+      if (isAvailable) {
+        await pushNotificationService.registerForPushNotifications();
+        // Register with backend after a delay to ensure auth is ready
+        setTimeout(() => {
+          pushNotificationService.registerTokenWithBackend();
+        }, 2000);
+      } else {
+        console.log('[PushNotification] Not available in this build');
+      }
+    };
+
+    initPushNotifications();
+
+    return () => {
+      pushNotificationService.removeListeners();
+    };
+  }, []);
 
   if (!loaded && !error) {
     return null;

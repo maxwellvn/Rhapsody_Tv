@@ -195,7 +195,7 @@ export default function ChannelProfileScreen() {
 
         {/* Tab Content */}
         <View style={styles.tabContent}>
-          {activeTab === 'Home' && <HomeTab channelId={id} channelName={channel.name} />}
+          {activeTab === 'Home' && <HomeTab channelId={id} channelName={channel.name} channelLogoUrl={channel.logoUrl} />}
           {activeTab === 'Live' && <LiveTab channelId={id} channelName={channel.name} />}
           {activeTab === 'Videos' && <VideosTab channelId={id} channelName={channel.name} />}
           {activeTab === 'Schedule' && <ScheduleTab channelId={id} />}

@@ -20,7 +20,12 @@
         "foregroundImage": "./assets/Icons/app-icon.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "useNextNotificationsApi": true,
+      "permissions": [
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE"
+      ]
     },
     "web": {
       "output": "static",
@@ -39,6 +44,14 @@
             "image": "./assets/logo/Logo.png",
             "backgroundColor": "#ffffff"
           }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/Icons/app-icon.png",
+          "color": "#2563EB",
+          "sounds": []
         }
       ]
     ],

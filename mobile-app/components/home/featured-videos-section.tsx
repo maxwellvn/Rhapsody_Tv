@@ -15,7 +15,7 @@ export function FeaturedVideosSection() {
   };
 
   const handleSeeAllPress = () => {
-    router.push('/(tabs)/discover');
+    router.push('/featured-videos');
   };
 
   if (isLoading) {
