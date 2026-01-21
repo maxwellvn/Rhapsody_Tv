@@ -8,17 +8,23 @@ import { ProgramHighlightsSection } from '@/components/home/program-highlights-s
 import { ProgramsSection } from '@/components/home/programs-section';
 import { SearchBar } from '@/components/search-bar';
 import { homepageKeys } from '@/hooks/queries/useHomepageQueries';
+import { useUnreadNotificationCount } from '@/hooks/queries/useNotificationQueries';
 import { styles } from '@/styles/home.styles';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useState } from 'react';
-import { Image, Pressable, RefreshControl, ScrollView, View } from 'react-native';
+import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { wp, fs } from '@/utils/responsive';
 
 export default function HomeScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Get unread notification count
+  const { data: unreadData } = useUnreadNotificationCount();
+  const unreadCount = unreadData?.count || 0;
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -64,6 +70,13 @@ export default function HomeScreen() {
             style={styles.notificationIcon}
             resizeMode="contain"
           />
+          {unreadCount > 0 && (
+            <View style={localStyles.badge}>
+              <Text style={localStyles.badgeText}>
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </Text>
+            </View>
+          )}
         </Pressable>
       </View>
 
@@ -104,3 +117,25 @@ export default function HomeScreen() {
     </View>
   );
 }
+
+const localStyles = StyleSheet.create({
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#EF4444',
+    borderRadius: wp(10),
+    minWidth: wp(18),
+    height: wp(18),
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: wp(4),
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: fs(10),
+    fontWeight: '700',
+  },
+});
