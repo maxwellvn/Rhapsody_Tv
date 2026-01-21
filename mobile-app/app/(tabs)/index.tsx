@@ -8,7 +8,7 @@ import { ProgramHighlightsSection } from '@/components/home/program-highlights-s
 import { ProgramsSection } from '@/components/home/programs-section';
 import { SearchBar } from '@/components/search-bar';
 import { homepageKeys } from '@/hooks/queries/useHomepageQueries';
-import { useUnreadNotificationCount } from '@/hooks/queries/useNotificationQueries';
+import { useNotifications } from '@/contexts/notification-context';
 import { styles } from '@/styles/home.styles';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
@@ -22,9 +22,8 @@ export default function HomeScreen() {
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
   
-  // Get unread notification count
-  const { data: unreadData } = useUnreadNotificationCount();
-  const unreadCount = unreadData?.count || 0;
+  // Get unread notification count from context (real-time updates via WebSocket)
+  const { unreadCount } = useNotifications();
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

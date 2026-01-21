@@ -2,6 +2,7 @@ import React, { ReactNode } from 'react';
 import { AuthProvider } from './AuthContext';
 import { QueryProvider } from './QueryProvider';
 import { ToastProvider } from './ToastContext';
+import { NotificationProvider } from '@/contexts/notification-context';
 
 /**
  * Combined App Providers
@@ -15,9 +16,11 @@ export const AppProvider = ({ children }: AppProviderProps) => {
   return (
     <QueryProvider>
       <AuthProvider>
-        <ToastProvider>
-          {children}
-        </ToastProvider>
+        <NotificationProvider>
+          <ToastProvider>
+            {children}
+          </ToastProvider>
+        </NotificationProvider>
       </AuthProvider>
     </QueryProvider>
   );
