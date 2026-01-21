@@ -23,7 +23,7 @@ export const API_ENDPOINTS = {
     LOGOUT: '/auth/logout',
     REFRESH_TOKEN: '/auth/refresh',
     REQUEST_EMAIL_VERIFICATION: '/auth/email/request-verification',
-    VERIFY_EMAIL: '/auth/verify-email',
+    VERIFY_EMAIL: '/auth/email/verify',
     FORGOT_PASSWORD: '/auth/forgot-password',
     RESET_PASSWORD: '/auth/reset-password',
     CHANGE_PASSWORD: '/auth/change-password',

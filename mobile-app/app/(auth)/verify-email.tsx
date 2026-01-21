@@ -16,6 +16,7 @@ export default function VerifyEmailScreen() {
   const { email } = useLocalSearchParams<{ email: string }>();
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const inputRefs = useRef<Array<TextInput | null>>([]);
 
   // Function to mask email for display
@@ -78,7 +79,7 @@ export default function VerifyEmailScreen() {
         showSuccess('Email verified successfully!');
         // Small delay to show success toast before navigation
         setTimeout(() => {
-          router.push('/(tabs)');
+          router.replace('/(tabs)');
         }, 1000);
       }
     } catch (error: any) {
@@ -94,6 +95,31 @@ export default function VerifyEmailScreen() {
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    if (!email) {
+      showError('Email address is missing. Please try registering again.');
+      return;
+    }
+
+    setIsResending(true);
+
+    try {
+      const response = await authService.requestEmailVerification(email);
+      
+      if (response.success) {
+        showSuccess('A new verification code has been sent to your email.');
+        // Clear the current code inputs
+        setCode(['', '', '', '', '', '']);
+        inputRefs.current[0]?.focus();
+      }
+    } catch (error: any) {
+      console.error('Resend code error:', error);
+      showError(error.message || 'Failed to resend verification code. Please try again.');
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -140,7 +166,7 @@ export default function VerifyEmailScreen() {
                 keyboardType="number-pad"
                 maxLength={1}
                 selectTextOnFocus
-                editable={!isLoading}
+                editable={!isLoading && !isResending}
               />
             ))}
           </View>
@@ -159,11 +185,23 @@ export default function VerifyEmailScreen() {
                 keyboardType="number-pad"
                 maxLength={1}
                 selectTextOnFocus
-                editable={!isLoading}
+                editable={!isLoading && !isResending}
               />
             ))}
           </View>
         </View>
+
+        {/* Resend Code Link */}
+        <Pressable 
+          onPress={handleResendCode} 
+          disabled={isResending || isLoading}
+          style={styles.resendContainer}
+        >
+          <Text style={styles.resendText}>
+            {isResending ? 'Sending...' : "Didn't receive a code? "}
+            {!isResending && <Text style={styles.resendLink}>Resend</Text>}
+          </Text>
+        </Pressable>
       </View>
 
       {/* Verify Button - Fixed at Bottom */}

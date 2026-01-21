@@ -51,7 +51,6 @@ export interface AuthResponse {
   user: User;
   accessToken: string;
   refreshToken: string;
-  isEmailVerified: boolean;
 }
 
 export interface User {
@@ -59,6 +58,7 @@ export interface User {
   email: string;
   fullName: string;
   roles: string[];
+  isEmailVerified: boolean;
 }
 
 /**

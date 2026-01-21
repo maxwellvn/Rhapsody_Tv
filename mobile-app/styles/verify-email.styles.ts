@@ -105,4 +105,17 @@ export const styles = StyleSheet.create({
     fontSize: fs(16),
     fontFamily: FONTS.semibold,
   },
+  resendContainer: {
+    marginTop: hp(16),
+  },
+  resendText: {
+    fontSize: fs(14),
+    fontFamily: FONTS.regular,
+    color: '#666666',
+    textAlign: 'center',
+  },
+  resendLink: {
+    color: '#0000FF',
+    fontFamily: FONTS.semibold,
+  },
 });
