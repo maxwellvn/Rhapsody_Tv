@@ -23,11 +23,13 @@ import {
 } from '@/hooks/queries/useVodQueries';
 import { WatchHistoryItem } from '@/types/api.types';
 import { formatDistanceToNow } from 'date-fns';
+import { useAuth } from '@/context/AuthContext';
 
 export default function HistoryScreen() {
+  const { isAuthenticated } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
 
-  // Fetch watch history with infinite scroll
+  // Fetch watch history with infinite scroll (only when authenticated)
   const {
     data,
     fetchNextPage,
@@ -36,7 +38,7 @@ export default function HistoryScreen() {
     isLoading,
     isError,
     refetch,
-  } = useInfiniteWatchHistory(20);
+  } = useInfiniteWatchHistory(20, isAuthenticated);
 
   const removeFromHistory = useRemoveFromHistory();
   const clearHistory = useClearWatchHistory();

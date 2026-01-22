@@ -6,6 +6,7 @@ import {
   AuthResponse,
   ApiResponse,
 } from '@/types/api.types';
+import { kingsChatService, KingsChatTokenResponse } from './kingschat.service';
 
 /**
  * Authentication Service
@@ -86,6 +87,31 @@ class AuthService {
     return api.post<void>(API_ENDPOINTS.AUTH.CHANGE_PASSWORD, {
       currentPassword,
       newPassword,
+    });
+  }
+
+  /**
+   * Login with KingsChat
+   * Opens KingsChat OAuth flow and authenticates with backend
+   */
+  async loginWithKingsChat(): Promise<ApiResponse<AuthResponse>> {
+    // Step 1: Open KingsChat OAuth and get tokens
+    const kingsChatTokens = await kingsChatService.login();
+
+    // Step 2: Send KingsChat access token to our backend
+    return api.post<AuthResponse>('/auth/kingschat', {
+      accessToken: kingsChatTokens.accessToken,
+      refreshToken: kingsChatTokens.refreshToken,
+    });
+  }
+
+  /**
+   * Login with KingsChat token (called from callback page)
+   */
+  async loginWithKingsChatToken(accessToken: string, refreshToken?: string): Promise<ApiResponse<AuthResponse>> {
+    return api.post<AuthResponse>('/auth/kingschat', {
+      accessToken,
+      refreshToken,
     });
   }
 }

@@ -283,21 +283,27 @@ export function useToggleCommentLike() {
 
 /**
  * Get user's watchlist (paginated)
+ * @param page - Page number
+ * @param limit - Items per page
+ * @param enabled - Whether the query should run (default: true). Set to false when user is not authenticated.
  */
-export function useWatchlist(page: number = 1, limit: number = 20) {
+export function useWatchlist(page: number = 1, limit: number = 20, enabled: boolean = true) {
   return useQuery({
     queryKey: vodKeys.watchlistPaginated(page, limit),
     queryFn: async () => {
       const response = await vodService.getWatchlist(page, limit);
       return response.data;
     },
+    enabled,
   });
 }
 
 /**
  * Get infinite scroll for watchlist
+ * @param limit - Items per page
+ * @param enabled - Whether the query should run (default: true). Set to false when user is not authenticated.
  */
-export function useInfiniteWatchlist(limit: number = 20) {
+export function useInfiniteWatchlist(limit: number = 20, enabled: boolean = true) {
   return useInfiniteQuery({
     queryKey: vodKeys.watchlist(),
     queryFn: async ({ pageParam = 1 }) => {
@@ -311,13 +317,16 @@ export function useInfiniteWatchlist(limit: number = 20) {
       return undefined;
     },
     initialPageParam: 1,
+    enabled,
   });
 }
 
 /**
  * Check if video is in watchlist
+ * @param videoId - Video ID to check
+ * @param isAuthenticated - Whether the user is authenticated (default: true). Query will only run if true.
  */
-export function useWatchlistStatus(videoId: string) {
+export function useWatchlistStatus(videoId: string, isAuthenticated: boolean = true) {
   return useQuery({
     queryKey: vodKeys.watchlistStatus(videoId),
     queryFn: async () => {
@@ -325,14 +334,14 @@ export function useWatchlistStatus(videoId: string) {
         const response = await vodService.getWatchlistStatus(videoId);
         return response.data;
       } catch (error: any) {
-        // Return default if video not found (404)
-        if (error?.statusCode === 404) {
+        // Return default if video not found (404) or unauthorized (401)
+        if (error?.statusCode === 404 || error?.statusCode === 401) {
           return { inWatchlist: false };
         }
         throw error;
       }
     },
-    enabled: !!videoId,
+    enabled: !!videoId && isAuthenticated,
   });
 }
 
@@ -386,21 +395,27 @@ export function useRemoveFromWatchlist() {
 
 /**
  * Get user's watch history (paginated)
+ * @param page - Page number
+ * @param limit - Items per page
+ * @param enabled - Whether the query should run (default: true). Set to false when user is not authenticated.
  */
-export function useWatchHistory(page: number = 1, limit: number = 20) {
+export function useWatchHistory(page: number = 1, limit: number = 20, enabled: boolean = true) {
   return useQuery({
     queryKey: vodKeys.historyPaginated(page, limit),
     queryFn: async () => {
       const response = await vodService.getWatchHistory(page, limit);
       return response.data;
     },
+    enabled,
   });
 }
 
 /**
  * Get infinite scroll for watch history
+ * @param limit - Items per page
+ * @param enabled - Whether the query should run (default: true). Set to false when user is not authenticated.
  */
-export function useInfiniteWatchHistory(limit: number = 20) {
+export function useInfiniteWatchHistory(limit: number = 20, enabled: boolean = true) {
   return useInfiniteQuery({
     queryKey: vodKeys.history(),
     queryFn: async ({ pageParam = 1 }) => {
@@ -414,6 +429,7 @@ export function useInfiniteWatchHistory(limit: number = 20) {
       return undefined;
     },
     initialPageParam: 1,
+    enabled,
   });
 }
 

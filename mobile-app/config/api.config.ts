@@ -5,10 +5,10 @@
 
 export const API_CONFIG = {
   // Backend API base URL - Production server
-  BASE_URL: 'http://iow4kgks8c0ssgs04kwgs04w.102.219.189.97.sslip.io/v1',
+  BASE_URL: 'https://iow4kgks8c0ssgs04kwgs04w.102.219.189.97.sslip.io/v1',
   
   // Timeout duration in milliseconds
-  TIMEOUT: 30000,
+  TIMEOUT: 60000,
   
   // API version
   VERSION: 'v1',

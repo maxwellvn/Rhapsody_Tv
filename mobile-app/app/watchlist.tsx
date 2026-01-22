@@ -17,11 +17,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useInfiniteWatchlist, useRemoveFromWatchlist } from '@/hooks/queries/useVodQueries';
 import { WatchlistItem } from '@/types/api.types';
+import { useAuth } from '@/context/AuthContext';
 
 export default function WatchlistScreen() {
+  const { isAuthenticated } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
 
-  // Fetch watchlist with infinite scroll
+  // Fetch watchlist with infinite scroll (only when authenticated)
   const {
     data,
     fetchNextPage,
@@ -30,7 +32,7 @@ export default function WatchlistScreen() {
     isLoading,
     isError,
     refetch,
-  } = useInfiniteWatchlist(20);
+  } = useInfiniteWatchlist(20, isAuthenticated);
 
   const removeFromWatchlist = useRemoveFromWatchlist();
 

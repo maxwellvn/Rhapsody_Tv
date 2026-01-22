@@ -25,6 +25,7 @@ import {
 } from '@/hooks/queries/useChannelQueries';
 import { livestreamService } from '@/services/livestream.service';
 import { useLivestreamViewer } from '@/hooks/useLivestreamViewer';
+import { usePiP } from '@/contexts/pip-context';
 
 export default function LiveVideoScreen() {
   const { id, videoId } = useLocalSearchParams<{ id?: string; videoId?: string }>();
@@ -32,6 +33,14 @@ export default function LiveVideoScreen() {
   const [userName, setUserName] = useState<string>('');
   const [userAvatar, setUserAvatar] = useState<string | undefined>();
   const hasTrackedWatch = useRef(false);
+  const { isInPiP, exitPiP } = usePiP();
+
+  // Exit PiP mode when this screen mounts to prevent multiple videos playing
+  useEffect(() => {
+    if (isInPiP) {
+      exitPiP();
+    }
+  }, []);
 
   // Load user info for chat
   useEffect(() => {
@@ -114,7 +123,9 @@ export default function LiveVideoScreen() {
   };
 
   const handleVideoPress = (recVideoId: string) => {
-    router.push(`/video?id=${recVideoId}`);
+    // Use replace instead of push to avoid stacking video screens
+    // This stops the current video and loads the new one
+    router.replace(`/video?id=${recVideoId}`);
   };
 
   // Handle channel subscription toggle

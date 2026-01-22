@@ -11,25 +11,28 @@ import { userService } from '@/services/user.service';
 import { storage } from '@/utils/storage';
 import { useQueryClient } from '@tanstack/react-query';
 import { useWatchHistory, useWatchlist, vodKeys } from '@/hooks/queries/useVodQueries';
+import { useAuth } from '@/context/AuthContext';
 
 interface UserProfile {
   fullName: string;
-  email: string;
+  email?: string;
   avatar?: string;
+  username?: string;
 }
 
 export default function ProfileScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { isAuthenticated } = useAuth();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
-  // Fetch watch history from VOD API
-  const { data: historyData } = useWatchHistory(1, 10);
+  // Fetch watch history from VOD API (only when authenticated)
+  const { data: historyData } = useWatchHistory(1, 10, isAuthenticated);
   
-  // Fetch watchlist from VOD API
-  const { data: watchlistData } = useWatchlist(1, 10);
+  // Fetch watchlist from VOD API (only when authenticated)
+  const { data: watchlistData } = useWatchlist(1, 10, isAuthenticated);
 
   // Transform history data for ProfileSection
   const historyItems = useMemo(() => {

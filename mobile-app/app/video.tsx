@@ -7,7 +7,7 @@ import { dimensions, fs } from '@/utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { ActivityIndicator, Image, ImageSourcePropType, Pressable, ScrollView, Share, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
@@ -27,16 +27,27 @@ import {
   useUnsubscribe 
 } from '@/hooks/queries/useChannelQueries';
 import { useToast } from '@/context/ToastContext';
+import { useAuth } from '@/context/AuthContext';
+import { usePiP } from '@/contexts/pip-context';
 
 export default function VideoScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const { showSuccess, showError } = useToast();
+  const { isAuthenticated } = useAuth();
+  const { isInPiP, exitPiP } = usePiP();
+
+  // Exit PiP mode when this screen mounts to prevent multiple videos playing
+  useEffect(() => {
+    if (isInPiP) {
+      exitPiP();
+    }
+  }, []);
 
   // Fetch video details
   const { data: video, isLoading: isLoadingVideo, error } = useVodVideoDetails(id || '');
   const { data: likeStatus } = useVodLikeStatus(id || '');
-  const { data: watchlistStatus } = useWatchlistStatus(id || '');
+  const { data: watchlistStatus } = useWatchlistStatus(id || '', isAuthenticated);
   const { data: recommendedVideos } = useVodVideos(1, 5);
   const { data: commentsData } = useVodComments(id || '', 1, 1); // Fetch just the first comment
   const toggleLikeMutation = useToggleVodLike();
@@ -184,7 +195,9 @@ export default function VideoScreen() {
   }, [id, video?.durationSeconds, updateWatchHistoryMutation]);
 
   const handleVideoPress = (videoId: string) => {
-    router.push(`/video?id=${videoId}`);
+    // Use replace instead of push to avoid stacking video screens
+    // This stops the current video and loads the new one
+    router.replace(`/video?id=${videoId}`);
   };
 
   // Get filtered recommendations (exclude current video)

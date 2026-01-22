@@ -34,19 +34,31 @@ export function MiniPlayer() {
   const scale = useRef(new Animated.Value(0)).current;
   const lastPosition = useRef({ x: 0, y: 0 });
 
-  // Video player - only create when we have a URI
-  const player = useVideoPlayer(pipData?.videoUri || null, (p) => {
-    if (pipData?.videoUri) {
-      p.loop = pipData.isLive || false;
-      if (pipData.currentTime) {
-        p.currentTime = pipData.currentTime;
-      }
-      p.play();
-    }
-  });
+  // Video player - create initially without a source
+  const player = useVideoPlayer(null);
 
   // Listen to playing state
   const { isPlaying } = useEvent(player, 'playingChange', { isPlaying: player.playing });
+
+  // When entering PiP with a video URI, load and play the video
+  useEffect(() => {
+    if (player && pipData?.videoUri && isInPiP) {
+      // Replace the video source and configure
+      player.replace(pipData.videoUri);
+      player.loop = pipData.isLive || false;
+      
+      // Set start time after a brief delay to ensure video is loaded
+      setTimeout(() => {
+        if (pipData.currentTime && pipData.currentTime > 0) {
+          player.currentTime = pipData.currentTime;
+        }
+        player.play();
+      }, 100);
+    } else if (player && !isInPiP) {
+      // Stop and clear when exiting PiP
+      player.pause();
+    }
+  }, [pipData?.videoUri, isInPiP]);
 
   // Animate in/out - must use same native driver setting as pan
   useEffect(() => {

@@ -186,6 +186,28 @@ export default function AuthScreen() {
     }
   };
 
+  const handleKingsChatLogin = async () => {
+    setIsLoading(true);
+
+    try {
+      // This opens the browser and KingsChat will redirect to our callback page
+      // The callback page (/kingschat-callback) handles the token exchange
+      await authService.loginWithKingsChat();
+      // If we get here without error, the callback page will handle navigation
+    } catch (error: any) {
+      console.error('KingsChat login error:', error);
+      
+      if (error.message === 'Login cancelled by user' || error.message === 'Login dismissed') {
+        // User cancelled, no need to show error
+        return;
+      }
+      
+      showError(error.message || 'An error occurred during KingsChat login. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar style="light" />
@@ -385,7 +407,11 @@ export default function AuthScreen() {
 
         <Text style={styles.orText}>OR</Text>
 
-        <Pressable style={styles.kingschatButton}>
+        <Pressable 
+          style={[styles.kingschatButton, isLoading && styles.registerButtonDisabled]}
+          onPress={handleKingsChatLogin}
+          disabled={isLoading}
+        >
           <Text style={styles.kingschatButtonText}>Sign In with KingsChat</Text>
           <Image
             source={require('@/assets/Icons/KC.png')}

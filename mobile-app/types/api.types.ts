@@ -55,10 +55,13 @@ export interface AuthResponse {
 
 export interface User {
   id: string;
-  email: string;
+  email?: string;
   fullName: string;
   roles: string[];
   isEmailVerified: boolean;
+  avatar?: string;
+  username?: string;
+  kingsChatId?: string;
 }
 
 /**

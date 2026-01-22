@@ -1,6 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 import { storage } from '@/utils/storage';
 import { Notification } from '@/types/api.types';
+import { API_CONFIG } from '@/config/api.config';
 
 // WebSocket event names (must match backend)
 const NOTIFICATION_WS_EVENTS = {
@@ -48,8 +49,8 @@ class NotificationSocketService {
         return;
       }
 
-      // Get base URL from environment or config
-      const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://iow4kgks8c0ssgs04kwgs04w.102.219.189.97.sslip.io';
+      // Get base URL from API config (remove /v1 suffix for WebSocket)
+      const baseUrl = API_CONFIG.BASE_URL.replace('/v1', '');
 
       this.socket = io(`${baseUrl}/notifications`, {
         auth: { token },
@@ -86,9 +87,18 @@ class NotificationSocketService {
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('[NotificationSocket] Connection error:', error.message);
+      // Only log first few errors to avoid console spam
+      if (this.reconnectAttempts < 3) {
+        console.warn('[NotificationSocket] Connection error:', error.message);
+      }
       this.isConnecting = false;
       this.reconnectAttempts++;
+      
+      // Stop reconnecting after max attempts
+      if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+        console.log('[NotificationSocket] Max reconnect attempts reached, stopping');
+        this.socket?.disconnect();
+      }
     });
 
     // Handle new notification

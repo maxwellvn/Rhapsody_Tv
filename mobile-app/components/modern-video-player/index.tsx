@@ -51,6 +51,7 @@ export function ModernVideoPlayer({
   const [duration, setDuration] = useState(0);
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekValue, setSeekValue] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const videoViewRef = useRef<VideoView>(null);
   const hideControlsTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastProgressRef = useRef<number>(0);
@@ -203,12 +204,18 @@ export function ModernVideoPlayer({
 
   const handleFullscreen = async () => {
     if (videoViewRef.current) {
+      setIsFullscreen(true);
       await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
       videoViewRef.current.enterFullscreen();
     }
   };
 
+  const handleFullscreenEnter = () => {
+    setIsFullscreen(true);
+  };
+
   const handleFullscreenExit = async () => {
+    setIsFullscreen(false);
     await ScreenOrientation.unlockAsync();
   };
 
@@ -259,7 +266,12 @@ export function ModernVideoPlayer({
             player={player}
             style={styles.video}
             contentFit="contain"
-            nativeControls={false}
+            nativeControls={isFullscreen}
+            fullscreenOptions={{
+              enable: true,
+              orientation: 'landscape',
+            }}
+            onFullscreenEnter={handleFullscreenEnter}
             onFullscreenExit={handleFullscreenExit}
           />
 
