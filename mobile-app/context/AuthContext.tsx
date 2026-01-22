@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, AuthResponse } from '@/types/api.types';
 import { storage } from '@/utils/storage';
+import { pushNotificationService } from '@/services/push-notification.service';
 
 interface AuthContextType {
   user: User | null;
@@ -58,6 +59,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       // Update state
       setUser(authData.user);
+
+      // Register push notification token with backend (now that user is authenticated)
+      pushNotificationService.onUserLogin().catch((error) => {
+        console.error('Error registering push token on login:', error);
+      });
     } catch (error) {
       console.error('Error during login:', error);
       throw error;
@@ -66,6 +72,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const logout = async () => {
     try {
+      // Unregister push notification token
+      await pushNotificationService.onUserLogout().catch((error) => {
+        console.error('Error unregistering push token on logout:', error);
+      });
+
       // Clear tokens and user data
       await Promise.all([
         storage.clearTokens(),

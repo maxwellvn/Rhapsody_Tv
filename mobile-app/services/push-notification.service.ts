@@ -1,52 +1,142 @@
 /**
  * Push Notification Service
- * 
- * NOTE: Push notifications are currently disabled because the native modules
- * (expo-notifications, expo-device) are not included in the current APK build.
- * 
- * To enable push notifications:
- * 1. Rebuild the APK with: npx expo prebuild && cd android && ./gradlew assembleRelease
- * 2. Uncomment the code in this file and in app/_layout.tsx
+ * Handles Expo push notifications registration and handling
  */
 
 import { Platform } from 'react-native';
 import { router } from 'expo-router';
+import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 import { api } from './api.client';
 import { storage } from '@/utils/storage';
+
+// Configure notification handling
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
 
 class PushNotificationService {
   private expoPushToken: string | null = null;
   private initialized = false;
+  private notificationListener: Notifications.EventSubscription | null = null;
+  private responseListener: Notifications.EventSubscription | null = null;
 
   /**
    * Initialize push notifications
-   * Currently disabled - native modules not in build
    */
   async initialize(): Promise<boolean> {
-    console.log('[PushNotification] Disabled - native modules not in build');
-    return false;
+    if (this.initialized) {
+      return true;
+    }
+
+    try {
+      const token = await this.registerForPushNotifications();
+      if (token) {
+        this.expoPushToken = token;
+        await this.registerTokenWithBackend();
+        this.setupListeners();
+        this.initialized = true;
+        console.log('[PushNotification] Initialized with token:', token);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('[PushNotification] Initialization error:', error);
+      return false;
+    }
   }
 
   /**
    * Check if notifications are available
    */
   isAvailable(): boolean {
-    return false;
+    return Device.isDevice && this.initialized;
   }
 
   /**
    * Register for push notifications
    */
   async registerForPushNotifications(): Promise<string | null> {
-    console.log('[PushNotification] Disabled - native modules not in build');
-    return null;
+    if (!Device.isDevice) {
+      console.log('[PushNotification] Must use physical device for push notifications');
+      return null;
+    }
+
+    try {
+      // Check existing permissions
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+
+      // Request permissions if not granted
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+
+      if (finalStatus !== 'granted') {
+        console.log('[PushNotification] Permission not granted');
+        return null;
+      }
+
+      // Get the Expo push token
+      const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+      const tokenData = await Notifications.getExpoPushTokenAsync({
+        projectId,
+      });
+
+      const token = tokenData.data;
+      console.log('[PushNotification] Got token:', token);
+
+      // Set up Android notification channel
+      if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('default', {
+          name: 'Default',
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#2563EB',
+        });
+      }
+
+      return token;
+    } catch (error) {
+      console.error('[PushNotification] Error getting push token:', error);
+      return null;
+    }
   }
 
   /**
    * Register token with backend
    */
   async registerTokenWithBackend(): Promise<void> {
-    console.log('[PushNotification] Disabled - native modules not in build');
+    if (!this.expoPushToken) {
+      console.log('[PushNotification] No token to register');
+      return;
+    }
+
+    try {
+      // Check if user is authenticated
+      const accessToken = await storage.getAccessToken();
+      if (!accessToken) {
+        console.log('[PushNotification] User not authenticated, skipping registration');
+        return;
+      }
+
+      await api.post('/notifications/register-token', {
+        token: this.expoPushToken,
+        platform: 'expo',
+        deviceId: Constants.deviceId,
+      });
+      console.log('[PushNotification] Token registered with backend');
+    } catch (error) {
+      console.error('[PushNotification] Error registering token with backend:', error);
+    }
   }
 
   /**
@@ -69,7 +159,21 @@ class PushNotificationService {
    * Setup notification listeners
    */
   setupListeners(): void {
-    // Disabled
+    // Listen for incoming notifications while app is in foreground
+    this.notificationListener = Notifications.addNotificationReceivedListener(
+      (notification) => {
+        console.log('[PushNotification] Received:', notification);
+      }
+    );
+
+    // Listen for notification taps
+    this.responseListener = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const data = response.notification.request.content.data;
+        console.log('[PushNotification] Tapped:', data);
+        this.handleNotificationTap(data);
+      }
+    );
   }
 
   /**
@@ -95,7 +199,14 @@ class PushNotificationService {
    * Remove listeners
    */
   removeListeners(): void {
-    // Disabled
+    if (this.notificationListener) {
+      this.notificationListener.remove();
+      this.notificationListener = null;
+    }
+    if (this.responseListener) {
+      this.responseListener.remove();
+      this.responseListener = null;
+    }
   }
 
   /**
@@ -114,28 +225,55 @@ class PushNotificationService {
     data?: Record<string, any>,
     seconds: number = 1
   ): Promise<void> {
-    console.log('[PushNotification] Disabled - native modules not in build');
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title,
+        body,
+        data,
+        sound: true,
+      },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds },
+    });
   }
 
   /**
    * Get badge count
    */
   async getBadgeCount(): Promise<number> {
-    return 0;
+    return await Notifications.getBadgeCountAsync();
   }
 
   /**
    * Set badge count
    */
   async setBadgeCount(count: number): Promise<void> {
-    // Disabled
+    await Notifications.setBadgeCountAsync(count);
   }
 
   /**
    * Clear all notifications
    */
   async clearAllNotifications(): Promise<void> {
-    // Disabled
+    await Notifications.dismissAllNotificationsAsync();
+  }
+
+  /**
+   * Re-register token after login
+   * Call this when user logs in to ensure token is associated with user
+   */
+  async onUserLogin(): Promise<void> {
+    if (this.expoPushToken) {
+      await this.registerTokenWithBackend();
+    } else {
+      await this.initialize();
+    }
+  }
+
+  /**
+   * Cleanup on logout
+   */
+  async onUserLogout(): Promise<void> {
+    await this.unregisterToken();
   }
 }
 

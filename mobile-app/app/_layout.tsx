@@ -17,8 +17,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AppProvider } from '@/context/AppProvider';
 import { PiPProvider } from '@/contexts/pip-context';
 import { MiniPlayer } from '@/components/mini-player';
-// Push notifications disabled until native modules are included in build
-// import { pushNotificationService } from '@/services/push-notification.service';
+import { pushNotificationService } from '@/services/push-notification.service';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -43,23 +42,21 @@ export default function RootLayout() {
     }
   }, [loaded, error]);
 
-  // Push notifications disabled until native modules are included in build
-  // To enable: rebuild APK with expo-notifications native module
-  // useEffect(() => {
-  //   const initPushNotifications = async () => {
-  //     const isAvailable = await pushNotificationService.initialize();
-  //     if (isAvailable) {
-  //       await pushNotificationService.registerForPushNotifications();
-  //       setTimeout(() => {
-  //         pushNotificationService.registerTokenWithBackend();
-  //       }, 2000);
-  //     }
-  //   };
-  //   initPushNotifications();
-  //   return () => {
-  //     pushNotificationService.removeListeners();
-  //   };
-  // }, []);
+  // Initialize push notifications
+  useEffect(() => {
+    const initPushNotifications = async () => {
+      try {
+        await pushNotificationService.initialize();
+      } catch (error) {
+        console.error('[RootLayout] Push notification init error:', error);
+      }
+    };
+    initPushNotifications();
+    
+    return () => {
+      pushNotificationService.removeListeners();
+    };
+  }, []);
 
   if (!loaded && !error) {
     return null;

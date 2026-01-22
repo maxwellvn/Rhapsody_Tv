@@ -1,6 +1,5 @@
 import { FONTS } from '@/styles/global';
 import { fs, hp, spacing } from '@/utils/responsive';
-import { useState } from 'react';
 import { StyleSheet, Switch, Text, View } from 'react-native';
 
 type SettingsItemToggleProps = {
@@ -8,32 +7,33 @@ type SettingsItemToggleProps = {
   description?: string;
   value?: boolean;
   onValueChange?: (value: boolean) => void;
+  disabled?: boolean;
 };
 
 export function SettingsItemToggle({ 
   label, 
   description, 
-  value: initialValue = false, 
-  onValueChange 
+  value = false, 
+  onValueChange,
+  disabled = false,
 }: SettingsItemToggleProps) {
-  const [isEnabled, setIsEnabled] = useState(initialValue);
-
-  const toggleSwitch = () => {
-    const newValue = !isEnabled;
-    setIsEnabled(newValue);
-    onValueChange?.(newValue);
+  const handleToggle = (newValue: boolean) => {
+    if (!disabled) {
+      onValueChange?.(newValue);
+    }
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, disabled && styles.disabled]}>
       <View style={styles.row}>
         <Text style={styles.label}>{label}</Text>
         <Switch
           trackColor={{ false: '#E5E5E5', true: '#93C5FD' }}
-          thumbColor={isEnabled ? '#2563EB' : '#FFFFFF'}
+          thumbColor={value ? '#2563EB' : '#FFFFFF'}
           ios_backgroundColor="#E5E5E5"
-          onValueChange={toggleSwitch}
-          value={isEnabled}
+          onValueChange={handleToggle}
+          value={value}
+          disabled={disabled}
         />
       </View>
       {description && (
@@ -48,6 +48,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingVertical: hp(10),
     backgroundColor: '#F5F5F5',
+  },
+  disabled: {
+    opacity: 0.6,
   },
   row: {
     flexDirection: 'row',
