@@ -1,8 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { DeviceToken, DeviceTokenDocument } from './schemas/device-token.schema';
 import { Notification, NotificationDocument, NotificationType } from './notification.schema';
+import { NotificationGateway } from './notification.gateway';
 import { Expo, ExpoPushMessage, ExpoPushTicket } from 'expo-server-sdk';
 
 @Injectable()
@@ -15,6 +16,8 @@ export class PushNotificationService {
     private deviceTokenModel: Model<DeviceTokenDocument>,
     @InjectModel(Notification.name)
     private notificationModel: Model<NotificationDocument>,
+    @Inject(forwardRef(() => NotificationGateway))
+    private notificationGateway: NotificationGateway,
   ) {
     this.expo = new Expo();
   }
@@ -246,7 +249,19 @@ export class PushNotificationService {
       imageUrl,
     });
 
-    // Send push notification
+    // Send via WebSocket (real-time, works in Expo Go)
+    this.notificationGateway.sendNotificationToUser(userId, {
+      _id: notification._id.toString(),
+      type,
+      title,
+      message,
+      data,
+      imageUrl,
+      isRead: false,
+      createdAt: notification.createdAt,
+    });
+
+    // Send push notification (for native builds)
     await this.sendToUser(userId, {
       title,
       body: message,
@@ -287,9 +302,28 @@ export class PushNotificationService {
       imageUrl,
     }));
 
-    await this.notificationModel.insertMany(notifications);
+    const createdNotifications = await this.notificationModel.insertMany(notifications);
 
-    // Send push notifications
+    // Send via WebSocket to all users (real-time, works in Expo Go)
+    const notificationPayload = {
+      type,
+      title,
+      message,
+      data,
+      imageUrl,
+      isRead: false,
+      createdAt: new Date(),
+    };
+    
+    // Send to each user with their specific notification ID
+    createdNotifications.forEach((notification, index) => {
+      this.notificationGateway.sendNotificationToUser(userIds[index], {
+        _id: notification._id.toString(),
+        ...notificationPayload,
+      });
+    });
+
+    // Send push notifications (for native builds)
     await this.sendToUsers(userIds, {
       title,
       body: message,
@@ -313,8 +347,19 @@ export class PushNotificationService {
     },
     imageUrl?: string,
   ): Promise<{ sent: number; failed: number }> {
+    // Broadcast via WebSocket to all connected users (real-time, works in Expo Go)
+    this.notificationGateway.broadcastNotification({
+      type,
+      title,
+      message,
+      data,
+      imageUrl,
+      isRead: false,
+      createdAt: new Date(),
+    });
+
     // For broadcast, we create notifications when users fetch them
-    // Just send push notifications
+    // Send push notifications (for native builds)
     return this.broadcast({
       title,
       body: message,
